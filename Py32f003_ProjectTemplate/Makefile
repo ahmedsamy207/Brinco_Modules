@@ -1,7 +1,12 @@
 ##### Project #####
-
-# add the make file and the arm-none-eabi to the PATH
-# or to the VSCode path using Ctrl + Shift + P then "Open User Settings (JSON)"
+#
+# PY32F003 project template (PY32F003F18P6TU, Cortex-M0+, 64 KB flash / 8 KB RAM)
+#
+# Copy this folder, rename it, then write your application in User/Src/main.c.
+# Nothing in this file needs editing unless you change the MCU or add a library.
+#
+# Requirements: arm-none-eabi-gcc and GNU make on PATH.
+# See SETUP_WINDOWS.md for the full Windows + VS Code setup.
 
 # Defaults to the folder name, so a copy of this template builds
 # Build\<FolderName>.elf - which is what .vscode/launch.json expects.
