@@ -1,20 +1,34 @@
 {
     "configurations": [
         {
-            "name": "Win32",
-            "includePath": [
-                "${workspaceFolder}/**"
+            "name": "PY32F003 (arm-none-eabi)",
+            "compilerPath": "arm-none-eabi-gcc",
+            "compilerArgs": [
+                "-mcpu=cortex-m0plus",
+                "-mthumb"
             ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE"
-            ],
-            "windowsSdkVersion": "8.1",
-            "compilerPath": "cl.exe",
+            "intelliSenseMode": "gcc-arm",
             "cStandard": "c17",
             "cppStandard": "c++17",
-            "intelliSenseMode": "windows-msvc-x86"
+            "defines": [
+                "PY32F003x8",
+                "FORBID_VECT_TAB_MIGRATION"
+            ],
+            "includePath": [
+                "${workspaceFolder}/Libraries/CMSIS/Core/Include",
+                "${workspaceFolder}/Libraries/CMSIS/Device/PY32F0xx/Include",
+                "${workspaceFolder}/Libraries/PY32F0xx_HAL_Driver/Inc",
+                "${workspaceFolder}/User/Inc"
+            ],
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/Libraries/CMSIS/Core/Include",
+                    "${workspaceFolder}/Libraries/CMSIS/Device/PY32F0xx/Include",
+                    "${workspaceFolder}/Libraries/PY32F0xx_HAL_Driver/Inc",
+                    "${workspaceFolder}/User/Inc"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
         }
     ],
     "version": 4

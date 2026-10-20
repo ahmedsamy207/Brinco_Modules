@@ -1,15 +1,19 @@
 {
-  "openocd.basePath": ["${workspaceFolder}/Tools/openocd-puya"],
-  "openocd.scriptsPath": ["${config:openocd.basePath}/script"],
-  "cortex-debug.openocdPath.windows": "${config:openocd.basePath}/bin/openocd.exe",
-  "files.associations": {
-    "py32f0xx_hal_def.h": "c",
-    "py32f0xx.h": "c",
-    "main.h": "c",
-    "py32f0xx_hal.h": "c",
-    "py32f0xx_hal_dma.h": "c",
-    "py32f0xx_hal_rcc.h": "c"
-  },
-  "cortex-debug.variableUseNaturalFormat": true,
-  "cmake.sourceDirectory": "D:/Origin-Labs/Brinco/PUYA/Py32f003_Ultrasonic/Libraries/FreeRTOS",
+    "files.associations": {
+        "py32f0xx_hal_def.h": "c",
+        "py32f0xx.h": "c",
+        "main.h": "c",
+        "py32f0xx_hal.h": "c",
+        "py32f0xx_hal_dma.h": "c",
+        "py32f0xx_hal_rcc.h": "c"
+    },
+    "cortex-debug.variableUseNaturalFormat": true,
+    "search.exclude": {
+        "**/Build": true,
+        "**/Temp": true
+    },
+    "files.watcherExclude": {
+        "**/Build/**": true,
+        "**/Temp/**": true
+    }
 }

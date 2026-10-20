@@ -4,6 +4,14 @@ ifeq ($(V),0)
 Q := @
 endif
 
+# The recipes below use cmd.exe syntax ("if not exist ... mkdir ...").
+# Pin the shell on Windows so an sh.exe from Git Bash / MSYS2 in PATH does
+# not break the build.
+ifeq ($(OS),Windows_NT)
+SHELL := cmd.exe
+.SHELLFLAGS := /C
+endif
+
 # Toolchain settings
 ifneq ($(ARM_TOOLCHAIN),)
 	PREFIX      := $(ARM_TOOLCHAIN)/arm-none-eabi-
@@ -21,6 +29,10 @@ OBJDUMP     = $(PREFIX)objdump
 TOP         := .
 TDIR        := $(TOP)/$(TEMP_DIR)
 BDIR        := $(TOP)/$(BUILD_DIR)
+
+# CMSIS device family pack used by pyOCD to resolve the PY32 target.
+# It ships with the project, so no pack download/installation is required.
+PYOCD_PACK  ?= $(TOP)/Tools/packs/Puya.PY32F0xx_DFP.1.2.0.pack
 
 # Source discovery
 CSOURCES    := $(foreach dir, $(CDIRS), $(wildcard $(dir)/*.c))
@@ -126,8 +138,8 @@ flash: $(BDIR)/$(PROJECT).elf
 ifeq ($(FLASH_PROGRM),jlink)
 	$(JLINKEXE) -device $(JLINK_DEVICE) -if swd -speed 4000 -JLinkScriptFile $(TOP)/Misc/jlink-script -CommanderScript $(TOP)/Misc/jlink-command
 else ifeq ($(FLASH_PROGRM),pyocd)
-	$(PYOCD_EXE) erase -t $(PYOCD_DEVICE) --chip --config $(TOP)/Misc/pyocd.yaml
-	$(PYOCD_EXE) load $< -t $(PYOCD_DEVICE) --config $(TOP)/Misc/pyocd.yaml
+	"$(PYOCD_EXE)" erase -t $(PYOCD_DEVICE) --pack "$(PYOCD_PACK)" --chip --config "$(TOP)/pyocd.yaml"
+	"$(PYOCD_EXE)" load $< -t $(PYOCD_DEVICE) --pack "$(PYOCD_PACK)" --config "$(TOP)/pyocd.yaml"
 else
 	@echo FLASH_PROGRM is invalid
 endif
