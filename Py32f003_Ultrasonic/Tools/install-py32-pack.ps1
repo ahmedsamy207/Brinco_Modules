@@ -21,16 +21,27 @@ if (-not (Test-Path -LiteralPath $PackPath)) {
     throw "Pack file not found: $PackPath"
 }
 
-# Prefer the project-local venv, then PATH.
+# Prefer the project-local venv, then PATH, then the per-user Scripts folder.
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $venvScripts = Join-Path $projectRoot '.venv\Scripts'
 $venvPyocd = Join-Path $venvScripts 'pyocd.exe'
 $venvPackManager = Join-Path $venvScripts 'pack-manager.exe'
 
+# %APPDATA%\Python\PythonXXX\Scripts - resolved without knowing the version
+$userScripts = $null
+if (Get-Command py -ErrorAction SilentlyContinue) {
+    $candidate = & py -c "import sysconfig; print(sysconfig.get_path('scripts', 'nt_user'))" 2>$null
+    if ($candidate) { $userScripts = ([string]$candidate).Trim() }
+}
+$userPackManager = if ($userScripts) { Join-Path $userScripts 'pack-manager.exe' } else { $null }
+$userPyocd = if ($userScripts) { Join-Path $userScripts 'pyocd.exe' } else { $null }
+
 if (Test-Path -LiteralPath $venvPyocd) {
     $pyocdExe = $venvPyocd
 } elseif (Get-Command pyocd -ErrorAction SilentlyContinue) {
     $pyocdExe = 'pyocd'
+} elseif ($userPyocd -and (Test-Path -LiteralPath $userPyocd)) {
+    $pyocdExe = $userPyocd
 } else {
     throw "pyocd was not found. Run Tools\setup-pyocd.ps1 or: py -m pip install --user -U pyocd"
 }
@@ -39,9 +50,14 @@ if (Test-Path -LiteralPath $venvPackManager) {
     $packManagerExe = $venvPackManager
 } elseif (Get-Command pack-manager -ErrorAction SilentlyContinue) {
     $packManagerExe = 'pack-manager'
+} elseif ($userPackManager -and (Test-Path -LiteralPath $userPackManager)) {
+    $packManagerExe = $userPackManager
 } else {
     throw "pack-manager was not found. It is installed together with pyOCD."
 }
+
+Write-Host "pyOCD:        $pyocdExe"
+Write-Host "pack-manager: $packManagerExe"
 
 $cacheDir = [string](& $packManagerExe print-cache-dir | Select-Object -First 1)
 $cacheDir = $cacheDir.Trim()

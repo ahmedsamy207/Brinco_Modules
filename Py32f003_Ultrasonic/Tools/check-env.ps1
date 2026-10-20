@@ -30,24 +30,66 @@ function Write-Check {
     Write-Host ("[OK]      {0}: {1}" -f $Name, $output) -ForegroundColor Green
 }
 
+# Per-user Scripts folder (e.g. C:\Users\<you>\AppData\Roaming\Python\Python314\Scripts)
+function Get-UserScriptsFolder {
+    try {
+        $p = & py -c "import sysconfig; print(sysconfig.get_path('scripts', 'nt_user'))" 2>$null
+        if ($p) { return ([string]$p).Trim() }
+    } catch { }
+    try {
+        $base = & py -c "import site; print(site.USER_BASE)" 2>$null
+        if ($base) { return (Join-Path ([string]$base).Trim() 'Scripts') }
+    } catch { }
+    return $null
+}
+
 Write-Host "=== PY32F003 toolchain check ==="
 Write-Host ""
 
 Write-Check 'Arm GNU Toolchain' 'arm-none-eabi-gcc' @('--version')
 Write-Check 'GNU Make'          'make'              @('--version')
-Write-Check 'Python launcher'   'py'                @('--version')
 
-# ---- pyOCD: prefer the project-local venv, then PATH ------------------------
-$venvPyocd = Join-Path $projectRoot '.venv\Scripts\pyocd.exe'
-if (Test-Path -LiteralPath $venvPyocd) {
-    $pyocdExe = $venvPyocd
-    Write-Host ("[OK]      pyOCD (project venv): {0}" -f (& $pyocdExe --version)) -ForegroundColor Green
-} elseif (Get-Command pyocd -ErrorAction SilentlyContinue) {
-    $pyocdExe = 'pyocd'
-    Write-Host ("[OK]      pyOCD (PATH): {0}" -f (& pyocd --version)) -ForegroundColor Green
+$userScripts = Get-UserScriptsFolder
+if (Get-Command py -ErrorAction SilentlyContinue) {
+    Write-Host ("[OK]      Python launcher: {0}" -f (& py --version 2>&1)) -ForegroundColor Green
+    if ($userScripts) {
+        Write-Host ("          per-user Scripts folder: {0}" -f $userScripts) -ForegroundColor DarkGray
+    }
 } else {
-    $pyocdExe = $null
-    Write-Host "[MISSING] pyOCD - neither .venv\Scripts\pyocd.exe nor 'pyocd' on PATH" -ForegroundColor Red
+    Write-Host "[MISSING] Python launcher 'py' not found. Install: winget install --id Python.Python.3.12 -e" -ForegroundColor Red
+    $script:problems++
+}
+
+# ---- pyOCD: project venv -> PATH -> 'py -m pyocd' -> per-user Scripts -------
+$venvPyocd = Join-Path $projectRoot '.venv\Scripts\pyocd.exe'
+$pyocdCmd = $null      # command used to invoke pyOCD
+$pyocdArgs = @()       # arguments prepended to every pyOCD call
+$pyocdLabel = $null
+
+if (Test-Path -LiteralPath $venvPyocd) {
+    $pyocdCmd = $venvPyocd
+    $pyocdLabel = 'project venv'
+} elseif (Get-Command pyocd -ErrorAction SilentlyContinue) {
+    $pyocdCmd = 'pyocd'
+    $pyocdLabel = 'PATH'
+} elseif ((Get-Command py -ErrorAction SilentlyContinue) -and (& py -m pyocd --version 2>$null)) {
+    $pyocdCmd = 'py'
+    $pyocdArgs = @('-m', 'pyocd')
+    $pyocdLabel = 'py -m pyocd'
+} elseif ($userScripts -and (Test-Path -LiteralPath (Join-Path $userScripts 'pyocd.exe'))) {
+    $pyocdCmd = Join-Path $userScripts 'pyocd.exe'
+    $pyocdLabel = 'per-user Scripts folder'
+}
+
+if ($pyocdCmd) {
+    $version = & $pyocdCmd @pyocdArgs --version 2>&1 | Select-Object -First 1
+    Write-Host ("[OK]      pyOCD ({0}): {1}" -f $pyocdLabel, $version) -ForegroundColor Green
+    if ($pyocdLabel -eq 'py -m pyocd' -and $userScripts) {
+        Write-Host ("          To get a plain 'pyocd' command, add this folder to PATH: {0}" -f $userScripts) -ForegroundColor DarkGray
+        Write-Host  "          (or run Tools\setup-pyocd.ps1 -AddToPath)" -ForegroundColor DarkGray
+    }
+} else {
+    Write-Host "[MISSING] pyOCD - not in .venv, PATH, 'py -m pyocd' or the per-user Scripts folder" -ForegroundColor Red
     Write-Host "          Fix: run the 'Set up pyOCD (local venv)' task, or 'py -m pip install --user -U pyocd'." -ForegroundColor Yellow
     $script:problems++
 }
@@ -62,10 +104,10 @@ if (Test-Path -LiteralPath $packPath) {
 }
 
 # pyOCD target visibility (pyocd.yaml is read from the project root)
-if ($pyocdExe) {
+if ($pyocdCmd) {
     Push-Location $projectRoot
     try {
-        $targets = & $pyocdExe list --targets 2>&1 | Out-String
+        $targets = & $pyocdCmd @pyocdArgs list --targets 2>&1 | Out-String
         if ($targets -match 'py32f003x8') {
             Write-Host "[OK]      pyOCD knows the target py32f003x8" -ForegroundColor Green
         } else {
@@ -76,7 +118,7 @@ if ($pyocdExe) {
 
         Write-Host ""
         Write-Host "--- Connected debug probes ---"
-        & $pyocdExe list 2>&1 | Out-Host
+        & $pyocdCmd @pyocdArgs list 2>&1 | Out-Host
     }
     finally {
         Pop-Location

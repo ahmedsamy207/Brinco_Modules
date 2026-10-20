@@ -29,6 +29,21 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 Write-Host "Project: $projectRoot" -ForegroundColor Cyan
 Write-Host "Venv:    $VenvPath" -ForegroundColor Cyan
 
+# A per-user install may already work; this script is only needed to avoid
+# touching PATH. Tell the user instead of silently installing a second copy.
+if (Get-Command py -ErrorAction SilentlyContinue) {
+    $existing = & py -m pyocd --version 2>$null
+    if ($existing) {
+        $scripts = & py -c "import sysconfig; print(sysconfig.get_path('scripts', 'nt_user'))" 2>$null
+        Write-Host ("pyOCD {0} is already installed for the default Python." -f (($existing | Select-Object -First 1))) -ForegroundColor Yellow
+        if ($scripts) {
+            Write-Host ("Existing executable folder: {0}" -f ([string]$scripts).Trim()) -ForegroundColor DarkGray
+        }
+        Write-Host "You only need this script if you want the project to be independent of PATH." -ForegroundColor DarkGray
+        Write-Host ""
+    }
+}
+
 # ---------------------------------------------------------------- Python -----
 $pyExe = $null
 $pyArgs = @()

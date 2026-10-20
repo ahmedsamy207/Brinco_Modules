@@ -44,10 +44,16 @@ JLINKEXE		?=
 JLINK_DEVICE	?= $(shell powershell -Command "(echo $(MCU_TYPE) | ForEach-Object { $_.ToUpper() })")
 
 # path to PyOCD
-# If a project-local virtual environment exists (Tools/setup-pyocd.ps1 creates
-# it), use it, so nothing has to be added to PATH.
+# Resolution order:
+#   1. PYOCD_EXE from the command line or the environment
+#   2. the project virtual environment created by Tools/setup-pyocd.ps1
+#   3. the Python launcher ("py -m pyocd"), which also works when the per-user
+#      Scripts folder (e.g. %APPDATA%\Python\Python314\Scripts) is not in PATH
+# Put quotes inside the value if the path contains spaces, e.g.
+#   make flash PYOCD_EXE="C:\Users\Ahmed Samy\AppData\Roaming\Python\Python314\Scripts\pyocd.exe"
+# (the recipes use the value verbatim, without adding their own quotes)
 PYOCD_VENV		:= $(wildcard .venv/Scripts/pyocd.exe)
-PYOCD_EXE		?= $(if $(PYOCD_VENV),.venv\Scripts\pyocd.exe,pyocd)
+PYOCD_EXE		?= $(if $(PYOCD_VENV),"$(PYOCD_VENV)",py -m pyocd)
 # PyOCD device (Lowercases)
 PYOCD_DEVICE 	?= $(shell powershell -Command "$$env:MCU_TYPE='$(MCU_TYPE)'; $$env:MCU_TYPE.ToLower()")
 

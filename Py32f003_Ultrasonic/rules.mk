@@ -136,7 +136,7 @@ clean:
 # Erase the whole chip (pyOCD only)
 erase:
 ifeq ($(FLASH_PROGRM),pyocd)
-	"$(PYOCD_EXE)" erase -t $(PYOCD_DEVICE) --pack "$(PYOCD_PACK)" --chip --config "$(TOP)/pyocd.yaml"
+	$(PYOCD_EXE) erase -t $(PYOCD_DEVICE) --pack "$(PYOCD_PACK)" --chip --config "$(TOP)/pyocd.yaml"
 else
 	@echo erase is only implemented for FLASH_PROGRM=pyocd
 endif
@@ -146,8 +146,8 @@ flash: $(BDIR)/$(PROJECT).elf
 ifeq ($(FLASH_PROGRM),jlink)
 	$(JLINKEXE) -device $(JLINK_DEVICE) -if swd -speed 4000 -JLinkScriptFile $(TOP)/Misc/jlink-script -CommanderScript $(TOP)/Misc/jlink-command
 else ifeq ($(FLASH_PROGRM),pyocd)
-	"$(PYOCD_EXE)" erase -t $(PYOCD_DEVICE) --pack "$(PYOCD_PACK)" --chip --config "$(TOP)/pyocd.yaml"
-	"$(PYOCD_EXE)" load $< -t $(PYOCD_DEVICE) --pack "$(PYOCD_PACK)" --config "$(TOP)/pyocd.yaml"
+	$(PYOCD_EXE) erase -t $(PYOCD_DEVICE) --pack "$(PYOCD_PACK)" --chip --config "$(TOP)/pyocd.yaml"
+	$(PYOCD_EXE) load $< -t $(PYOCD_DEVICE) --pack "$(PYOCD_PACK)" --config "$(TOP)/pyocd.yaml"
 else
 	@echo FLASH_PROGRM is invalid
 endif

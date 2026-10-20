@@ -119,8 +119,52 @@ winget install --id Python.Python.3.12 -e
 py --version
 ```
 
-Then install pyOCD. **Recommended: a project-local virtual environment** - it
-needs no administrator rights and cannot be broken by PATH settings:
+### Already installed? (per-user install, e.g. Python 3.14)
+
+With a standard `pip install --user`, `pyocd.exe` ends up in a **version-specific
+per-user folder** that Windows does *not* put on PATH, for example:
+
+```text
+C:\Users\Ahmed Samy\AppData\Roaming\Python\Python314\Scripts\pyocd.exe
+```
+
+Resolve it without hard-coding the version, and check it works:
+
+```powershell
+$scripts = & py -c "import sysconfig; print(sysconfig.get_path('scripts','nt_user'))"
+$scripts                                  # ...\AppData\Roaming\Python\Python314\Scripts
+
+py -m pyocd --version                     # works even with pyocd NOT on PATH
+& "$scripts\pyocd.exe" list --targets     # quotes needed: the path contains a space
+```
+
+To get a plain `pyocd` command in **every new terminal**, add that folder to the
+*user* PATH (no admin rights needed):
+
+```powershell
+$userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+if (($userPath -split ';') -notcontains $scripts) {
+    [Environment]::SetEnvironmentVariable(
+        'Path', $userPath.TrimEnd(';') + ';' + $scripts, 'User')
+}
+```
+
+Then close **all** terminals and VS Code and reopen them.
+
+With that in place you can skip the installation parts below. Note that this
+project also works **without** any PATH change:
+
+* `make flash` / `make erase` fall back to `py -m pyocd`
+* `.vscode/settings.json` sets
+  `"cortex-debug.pyocdPath.windows": "${env:APPDATA}/Python/Python314/Scripts/pyocd.exe"`
+  (change `Python314` there if you upgrade Python)
+
+---
+
+### Fresh install: project-local venv
+
+**Recommended: a project-local virtual environment** - it needs no administrator
+rights and cannot be broken by PATH settings:
 
 ```powershell
 cd <path-to-repo>\Py32f003_Ultrasonic
@@ -153,33 +197,22 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\setup-pyocd.ps1 -Add
 
 ```powershell
 py -m pip install --user -U pyocd
-```
 
-The `pyocd` launcher then lands in the per-user **Scripts** folder, which is
-usually **not** on PATH. Add it once:
-
-```powershell
-$scripts = py -c "import site; print(site.USER_BASE + r'\Scripts')"
+$scripts = & py -c "import sysconfig; print(sysconfig.get_path('scripts','nt_user'))"
 [Environment]::SetEnvironmentVariable(
     'Path',
-    [Environment]::GetEnvironmentVariable('Path', 'User') + ';' + $scripts,
+    [Environment]::GetEnvironmentVariable('Path', 'User').TrimEnd(';') + ';' + $scripts,
     'User')
 ```
 
-Then close **all** terminals and VS Code and reopen them. Alternatively point
-VS Code at the exact executable by adding this to `.vscode\settings.json`:
-
-```jsonc
-"cortex-debug.pyocdPath.windows": "C:/Users/<you>/AppData/Roaming/Python/Python312/Scripts/pyocd.exe"
-```
+Then close **all** terminals and VS Code and reopen them.
 
 > **"pyocd : The term 'pyocd' is not recognized"** means the executable is not on
 > PATH - it does not mean the board or the pack is wrong. Verify where it is:
 >
 > ```powershell
-> py -m pyocd --version          # works even when 'pyocd' is not on PATH
-> py -m site --user-base         # ...\AppData\Roaming\Python > Scripts lives here
-> Get-ChildItem "$env:APPDATA\Python\Python312\Scripts\pyocd.exe"
+> py -m pyocd --version     # works even when 'pyocd' is not on PATH
+> py -c "import sysconfig; print(sysconfig.get_path('scripts','nt_user'))"
 > ```
 >
 > If `py -m pyocd --version` fails, pyOCD is not installed at all; if it works,
@@ -231,10 +264,13 @@ Verify from the project folder:
 ```powershell
 cd <path-to-repo>\Py32f003_Ultrasonic
 
-# venv install
+# works with a global/pip install, even without PATH
+py -m pyocd list --targets | Select-String py32f003x8
+
+# project-local venv
 .\.venv\Scripts\pyocd.exe list --targets | Select-String py32f003x8
 
-# or with pyocd on PATH / an activated venv
+# if the per-user Scripts folder is on PATH (or the venv is activated)
 pyocd list --targets | Select-String py32f003x8
 ```
 
@@ -352,7 +388,8 @@ with the ARM build:
 | `Tools/check-env.ps1` | **new** - verifies compiler, make, Python, pyOCD (venv or PATH), pack, target and probe |
 | `Tools/install-py32-pack.ps1` | **new** - optional global pack registration |
 | `rules.mk` | pins `SHELL` to `cmd.exe` on Windows, adds `PYOCD_PACK` and an `erase` target, quotes paths, passes `--pack` to pyOCD |
-| `Makefile` | `PYOCD_EXE` auto-detects `.venv\Scripts\pyocd.exe`, so pyOCD does not need to be on PATH |
+| `Makefile` | `PYOCD_EXE` resolves in order: override -> `.venv\Scripts\pyocd.exe` -> `py -m pyocd`, so pyOCD does not need to be on PATH |
+| `.vscode/settings.json` | `cortex-debug.pyocdPath.windows` points at `${env:APPDATA}/Python/Python314/Scripts/pyocd.exe` so F5 debugging works without PATH |
 | `.gitignore` | ignores the local `.venv\` |
 
 Run the **Check toolchain** task any time to see what is missing.
@@ -364,7 +401,8 @@ Run the **Check toolchain** task any time to see what is missing.
 | Symptom | Fix |
 |---------|-----|
 | `make` / `arm-none-eabi-gcc` / `pyocd` not recognized | PATH was changed in another window. Close **all** terminals and VS Code, then reopen. |
-| `pyocd : The term 'pyocd' is not recognized` | pyOCD is not on PATH. Test with `py -m pyocd --version`. Either run `Tools\setup-pyocd.ps1` (recommended, no PATH needed) or add the per-user Scripts folder to PATH - see section 4. |
+| `pyocd : The term 'pyocd' is not recognized` | pyOCD is not on PATH. It usually lives in `C:\Users\<you>\AppData\Roaming\Python\Python314\Scripts`. Test with `py -m pyocd --version`; if that works only PATH is missing. Add that folder to the user PATH, or just use `make flash` (falls back to `py -m pyocd`) - see section 4. |
+| `make flash` says `'py' is not recognized` | The Python launcher is missing, so the `py -m pyocd` fallback cannot work. Install Python from python.org/winget, or pass the exe: `make flash PYOCD_EXE="C:\Users\Ahmed Samy\AppData\Roaming\Python\Python314\Scripts\pyocd.exe"` (quotes belong in the value). |
 | `make: *** [..] Error 1` with `The syntax of the command is incorrect` | You are running make from Git Bash/MSYS2; use PowerShell. `rules.mk` pins `cmd.exe` when `OS=Windows_NT`, but a stale checkout may not have the fix. |
 | `arm-none-eabi-gcc: error: unrecognized command-line option '-mcpu=cortex-m0plus'` | A non-ARM `gcc` is first in PATH. Put the Arm toolchain `bin` folder first. |
 | `pyocd: unrecognized target type: py32f003x8` | Run pyOCD from the project folder (so it reads `pyocd.yaml`), or run the pack installer, or pass `--pack Tools\packs\Puya.PY32F0xx_DFP.1.2.0.pack`. |
