@@ -44,7 +44,10 @@ JLINKEXE		?=
 JLINK_DEVICE	?= $(shell powershell -Command "(echo $(MCU_TYPE) | ForEach-Object { $_.ToUpper() })")
 
 # path to PyOCD
-PYOCD_EXE		?= pyocd
+# If a project-local virtual environment exists (Tools/setup-pyocd.ps1 creates
+# it), use it, so nothing has to be added to PATH.
+PYOCD_VENV		:= $(wildcard .venv/Scripts/pyocd.exe)
+PYOCD_EXE		?= $(if $(PYOCD_VENV),.venv\Scripts\pyocd.exe,pyocd)
 # PyOCD device (Lowercases)
 PYOCD_DEVICE 	?= $(shell powershell -Command "$$env:MCU_TYPE='$(MCU_TYPE)'; $$env:MCU_TYPE.ToLower()")
 

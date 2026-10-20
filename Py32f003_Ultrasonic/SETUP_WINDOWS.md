@@ -112,18 +112,51 @@ Alternatives:
 
 ## 4. Python + pyOCD
 
+Install Python first:
+
 ```powershell
 winget install --id Python.Python.3.12 -e
-
 py --version
-py -m pip install --user -U pyocd
-pyocd --version
 ```
 
-pyOCD installs its own `libusb` DLL, so nothing else is needed for USB probes.
+Then install pyOCD. **Recommended: a project-local virtual environment** - it
+needs no administrator rights and cannot be broken by PATH settings:
 
-If `pyocd` is not recognized, add the per-user Python **Scripts** folder to PATH
-and reopen the terminal:
+```powershell
+cd <path-to-repo>\Py32f003_Ultrasonic
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\setup-pyocd.ps1
+```
+
+That creates `.venv\` inside the project, installs/updates pyOCD in it, checks
+that the `py32f003x8` target resolves and lists connected probes. `.venv\` is
+ignored by git.
+
+Afterwards everything works **without** `pyocd` being on PATH:
+
+* the Makefile auto-detects `.venv\Scripts\pyocd.exe` (`make flash`, `make erase`)
+* the VS Code tasks use the same detection
+* in a terminal, activate it once per session:
+
+  ```powershell
+  .\.venv\Scripts\Activate.ps1
+  pyocd list --targets
+  ```
+
+To make the bare `pyocd` command available in **every** terminal (and for the
+Cortex-Debug `pyocd` server), re-run the script with `-AddToPath`:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\setup-pyocd.ps1 -AddToPath
+```
+
+### Alternative: global (per-user) install
+
+```powershell
+py -m pip install --user -U pyocd
+```
+
+The `pyocd` launcher then lands in the per-user **Scripts** folder, which is
+usually **not** on PATH. Add it once:
 
 ```powershell
 $scripts = py -c "import site; print(site.USER_BASE + r'\Scripts')"
@@ -133,7 +166,28 @@ $scripts = py -c "import site; print(site.USER_BASE + r'\Scripts')"
     'User')
 ```
 
-`pack-manager` (used by the optional pack installer) lives in the same folder.
+Then close **all** terminals and VS Code and reopen them. Alternatively point
+VS Code at the exact executable by adding this to `.vscode\settings.json`:
+
+```jsonc
+"cortex-debug.pyocdPath.windows": "C:/Users/<you>/AppData/Roaming/Python/Python312/Scripts/pyocd.exe"
+```
+
+> **"pyocd : The term 'pyocd' is not recognized"** means the executable is not on
+> PATH - it does not mean the board or the pack is wrong. Verify where it is:
+>
+> ```powershell
+> py -m pyocd --version          # works even when 'pyocd' is not on PATH
+> py -m site --user-base         # ...\AppData\Roaming\Python > Scripts lives here
+> Get-ChildItem "$env:APPDATA\Python\Python312\Scripts\pyocd.exe"
+> ```
+>
+> If `py -m pyocd --version` fails, pyOCD is not installed at all; if it works,
+> only PATH is missing. The venv route above sidesteps both cases.
+
+pyOCD installs its own `libusb` DLL, so nothing else is needed for USB probes.
+`pack-manager` (used by the optional pack installer) lives in the same folder
+as `pyocd.exe`.
 
 ---
 
@@ -176,6 +230,11 @@ Verify from the project folder:
 
 ```powershell
 cd <path-to-repo>\Py32f003_Ultrasonic
+
+# venv install
+.\.venv\Scripts\pyocd.exe list --targets | Select-String py32f003x8
+
+# or with pyocd on PATH / an activated venv
 pyocd list --targets | Select-String py32f003x8
 ```
 
@@ -239,8 +298,8 @@ pyocd erase -t py32f003x8 --pack .\Tools\packs\Puya.PY32F0xx_DFP.1.2.0.pack --ch
 pyocd load  -t py32f003x8 --pack .\Tools\packs\Puya.PY32F0xx_DFP.1.2.0.pack .\Build\Py32f003_Ultrasonic.hex --config .\pyocd.yaml
 ```
 
-Or use the VS Code task **Flash (pyOCD)**, or **Erase chip (pyOCD)** for a full
-erase.
+Or use the VS Code task **Flash (pyOCD)**, or **Erase chip (pyOCD)**
+(`make erase`) for a full chip erase without programming.
 
 J-Link instead of pyOCD (needs the SEGGER software and the J-Link device name):
 
@@ -289,9 +348,12 @@ with the ARM build:
 | `.vscode/extensions.json` | recommends C/C++, Cortex-Debug, Makefile Tools |
 | `pyocd.yaml` | **new** - points pyOCD at the bundled pack and sets 1 MHz SWD |
 | `Tools/packs/Puya.PY32F0xx_DFP.1.2.0.pack` | **new** - Puya device family pack (v1.2.0) |
-| `Tools/check-env.ps1` | **new** - verifies compiler, make, Python, pyOCD, pack, target and probe |
+| `Tools/setup-pyocd.ps1` | **new** - installs pyOCD into a project-local `.venv\` (optional `-AddToPath`) |
+| `Tools/check-env.ps1` | **new** - verifies compiler, make, Python, pyOCD (venv or PATH), pack, target and probe |
 | `Tools/install-py32-pack.ps1` | **new** - optional global pack registration |
-| `rules.mk` | pins `SHELL` to `cmd.exe` on Windows, adds `PYOCD_PACK`, quotes paths, passes `--pack` to pyOCD |
+| `rules.mk` | pins `SHELL` to `cmd.exe` on Windows, adds `PYOCD_PACK` and an `erase` target, quotes paths, passes `--pack` to pyOCD |
+| `Makefile` | `PYOCD_EXE` auto-detects `.venv\Scripts\pyocd.exe`, so pyOCD does not need to be on PATH |
+| `.gitignore` | ignores the local `.venv\` |
 
 Run the **Check toolchain** task any time to see what is missing.
 
@@ -302,6 +364,7 @@ Run the **Check toolchain** task any time to see what is missing.
 | Symptom | Fix |
 |---------|-----|
 | `make` / `arm-none-eabi-gcc` / `pyocd` not recognized | PATH was changed in another window. Close **all** terminals and VS Code, then reopen. |
+| `pyocd : The term 'pyocd' is not recognized` | pyOCD is not on PATH. Test with `py -m pyocd --version`. Either run `Tools\setup-pyocd.ps1` (recommended, no PATH needed) or add the per-user Scripts folder to PATH - see section 4. |
 | `make: *** [..] Error 1` with `The syntax of the command is incorrect` | You are running make from Git Bash/MSYS2; use PowerShell. `rules.mk` pins `cmd.exe` when `OS=Windows_NT`, but a stale checkout may not have the fix. |
 | `arm-none-eabi-gcc: error: unrecognized command-line option '-mcpu=cortex-m0plus'` | A non-ARM `gcc` is first in PATH. Put the Arm toolchain `bin` folder first. |
 | `pyocd: unrecognized target type: py32f003x8` | Run pyOCD from the project folder (so it reads `pyocd.yaml`), or run the pack installer, or pass `--pack Tools\packs\Puya.PY32F0xx_DFP.1.2.0.pack`. |

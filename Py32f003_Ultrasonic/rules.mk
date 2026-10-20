@@ -77,7 +77,7 @@ endif
 TGT_INCFLAGS := $(addprefix -I$(TOP)/, $(INCLUDES))
 
 # Targets
-.PHONY: all clean flash echo
+.PHONY: all clean flash erase echo
 
 all: $(BDIR)/$(PROJECT).elf $(BDIR)/$(PROJECT).bin $(BDIR)/$(PROJECT).hex $(BDIR)/$(PROJECT).lst
 
@@ -132,6 +132,14 @@ $(BDIR)/%.lst: $(BDIR)/%.elf
 clean:
 	@if exist "$(TDIR)" rmdir /S /Q "$(TDIR)"
 	@if exist "$(BDIR)" rmdir /S /Q "$(BDIR)"
+
+# Erase the whole chip (pyOCD only)
+erase:
+ifeq ($(FLASH_PROGRM),pyocd)
+	"$(PYOCD_EXE)" erase -t $(PYOCD_DEVICE) --pack "$(PYOCD_PACK)" --chip --config "$(TOP)/pyocd.yaml"
+else
+	@echo erase is only implemented for FLASH_PROGRM=pyocd
+endif
 
 # Flash (optional)
 flash: $(BDIR)/$(PROJECT).elf

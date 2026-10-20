@@ -51,16 +51,25 @@
         {
             "label": "Erase chip (pyOCD)",
             "type": "shell",
-            "command": "pyocd",
+            "command": "make",
             "args": [
-                "erase",
-                "--chip",
-                "-t",
-                "py32f003x8",
-                "--pack",
-                "${workspaceFolder}/Tools/packs/Puya.PY32F0xx_DFP.1.2.0.pack",
-                "--config",
-                "${workspaceFolder}/pyocd.yaml"
+                "erase"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Set up pyOCD (local venv)",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/Tools/setup-pyocd.ps1"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

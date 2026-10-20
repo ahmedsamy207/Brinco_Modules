@@ -10,6 +10,8 @@
 $ErrorActionPreference = 'Continue'
 $script:problems = 0
 
+$projectRoot = Split-Path -Parent $PSScriptRoot
+
 function Write-Check {
     param(
         [string]$Name,
@@ -34,10 +36,23 @@ Write-Host ""
 Write-Check 'Arm GNU Toolchain' 'arm-none-eabi-gcc' @('--version')
 Write-Check 'GNU Make'          'make'              @('--version')
 Write-Check 'Python launcher'   'py'                @('--version')
-Write-Check 'pyOCD'             'pyocd'             @('--version')
+
+# ---- pyOCD: prefer the project-local venv, then PATH ------------------------
+$venvPyocd = Join-Path $projectRoot '.venv\Scripts\pyocd.exe'
+if (Test-Path -LiteralPath $venvPyocd) {
+    $pyocdExe = $venvPyocd
+    Write-Host ("[OK]      pyOCD (project venv): {0}" -f (& $pyocdExe --version)) -ForegroundColor Green
+} elseif (Get-Command pyocd -ErrorAction SilentlyContinue) {
+    $pyocdExe = 'pyocd'
+    Write-Host ("[OK]      pyOCD (PATH): {0}" -f (& pyocd --version)) -ForegroundColor Green
+} else {
+    $pyocdExe = $null
+    Write-Host "[MISSING] pyOCD - neither .venv\Scripts\pyocd.exe nor 'pyocd' on PATH" -ForegroundColor Red
+    Write-Host "          Fix: run the 'Set up pyOCD (local venv)' task, or 'py -m pip install --user -U pyocd'." -ForegroundColor Yellow
+    $script:problems++
+}
 
 # Device family pack shipped with this project
-$projectRoot = Split-Path -Parent $PSScriptRoot
 $packPath = Join-Path $PSScriptRoot 'packs\Puya.PY32F0xx_DFP.1.2.0.pack'
 if (Test-Path -LiteralPath $packPath) {
     Write-Host ("[OK]      Puya DFP: {0}" -f $packPath) -ForegroundColor Green
@@ -46,12 +61,11 @@ if (Test-Path -LiteralPath $packPath) {
     $script:problems++
 }
 
-# pyOCD target visibility (uses pyocd.yaml because cwd is the project root)
-$pyocd = Get-Command pyocd -ErrorAction SilentlyContinue
-if ($pyocd) {
+# pyOCD target visibility (pyocd.yaml is read from the project root)
+if ($pyocdExe) {
     Push-Location $projectRoot
     try {
-        $targets = & pyocd list --targets 2>&1 | Out-String
+        $targets = & $pyocdExe list --targets 2>&1 | Out-String
         if ($targets -match 'py32f003x8') {
             Write-Host "[OK]      pyOCD knows the target py32f003x8" -ForegroundColor Green
         } else {
@@ -62,7 +76,7 @@ if ($pyocd) {
 
         Write-Host ""
         Write-Host "--- Connected debug probes ---"
-        & pyocd list 2>&1 | Out-Host
+        & $pyocdExe list 2>&1 | Out-Host
     }
     finally {
         Pop-Location

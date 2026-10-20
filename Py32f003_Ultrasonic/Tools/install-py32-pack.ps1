@@ -2,10 +2,10 @@
 <#
     Register the Puya PY32F0xx device family pack with pyOCD.
 
-    This is OPTIONAL for this project: pyocd.yaml and the Makefile already
-    pass the bundled .pack file explicitly. Installing it into pyOCD's pack
-    cache additionally makes 'pyocd list --targets' and manual pyocd commands
-    work from any folder, without --pack.
+    This is OPTIONAL for this project: pyocd.yaml and the Makefile already pass
+    the bundled .pack file explicitly. Installing it into pyOCD's pack cache
+    additionally makes 'pyocd list --targets' and manual pyocd commands work
+    from any folder, without --pack.
 
     Usage (from the project root):
         powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\install-py32-pack.ps1
@@ -21,15 +21,29 @@ if (-not (Test-Path -LiteralPath $PackPath)) {
     throw "Pack file not found: $PackPath"
 }
 
-if (-not (Get-Command pyocd -ErrorAction SilentlyContinue)) {
-    throw "pyocd was not found on PATH. Install it first: py -m pip install --user -U pyocd"
+# Prefer the project-local venv, then PATH.
+$projectRoot = Split-Path -Parent $PSScriptRoot
+$venvScripts = Join-Path $projectRoot '.venv\Scripts'
+$venvPyocd = Join-Path $venvScripts 'pyocd.exe'
+$venvPackManager = Join-Path $venvScripts 'pack-manager.exe'
+
+if (Test-Path -LiteralPath $venvPyocd) {
+    $pyocdExe = $venvPyocd
+} elseif (Get-Command pyocd -ErrorAction SilentlyContinue) {
+    $pyocdExe = 'pyocd'
+} else {
+    throw "pyocd was not found. Run Tools\setup-pyocd.ps1 or: py -m pip install --user -U pyocd"
 }
 
-if (-not (Get-Command pack-manager -ErrorAction SilentlyContinue)) {
-    throw "pack-manager was not found on PATH. It is installed together with pyOCD; check the Python Scripts folder."
+if (Test-Path -LiteralPath $venvPackManager) {
+    $packManagerExe = $venvPackManager
+} elseif (Get-Command pack-manager -ErrorAction SilentlyContinue) {
+    $packManagerExe = 'pack-manager'
+} else {
+    throw "pack-manager was not found. It is installed together with pyOCD."
 }
 
-$cacheDir = [string](& pack-manager print-cache-dir | Select-Object -First 1)
+$cacheDir = [string](& $packManagerExe print-cache-dir | Select-Object -First 1)
 $cacheDir = $cacheDir.Trim()
 if (-not $cacheDir) {
     throw "Could not determine the cmsis-pack-manager cache directory."
@@ -65,7 +79,7 @@ try {
     Copy-Item -LiteralPath $PackPath -Destination $packTarget -Force
     Copy-Item -LiteralPath $pdsc.FullName -Destination $pdscTarget -Force
 
-    & pack-manager add-packs $pdscTarget
+    & $packManagerExe add-packs $pdscTarget
     if ($LASTEXITCODE -ne 0) {
         throw "pack-manager add-packs failed with exit code $LASTEXITCODE"
     }
@@ -76,11 +90,11 @@ finally {
 
 Write-Host ""
 Write-Host "Installed packs:" -ForegroundColor Cyan
-& pyocd pack show
+& $pyocdExe pack show
 
 Write-Host ""
 Write-Host "Puya targets now visible to pyOCD:" -ForegroundColor Cyan
-& pyocd list --targets | Select-String -Pattern 'py32f003', 'py32f040'
+& $pyocdExe list --targets | Select-String -Pattern 'py32f003', 'py32f040'
 
 Write-Host ""
 Write-Host "Done. You can now omit --pack from pyocd commands." -ForegroundColor Green
