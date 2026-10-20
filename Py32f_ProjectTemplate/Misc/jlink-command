@@ -1,4 +1,0 @@
-erase
-loadfile Build/Py32f_ProjectTemplate.hex 0 noreset
-reset
-exit

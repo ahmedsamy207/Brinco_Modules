@@ -3,7 +3,7 @@
     // Open it with:   code Brinco_Modules.code-workspace
     //
     // Each project folder also works on its own (File > Open Folder). Use this
-    // file when you want both modules, plus the repository docs, in one window.
+    // file when you want every module, plus the repository docs, in one window.
     "folders": [
         {
             "name": "Brinco Modules (repo)",
@@ -14,8 +14,12 @@
             "path": "Py32f003_Ultrasonic"
         },
         {
+            "name": "PY32F003 - Template",
+            "path": "Py32f003_ProjectTemplate"
+        },
+        {
             "name": "PY32F040 - Template",
-            "path": "Py32f_ProjectTemplate"
+            "path": "Py32f040_ProjectTemplate"
         }
     ],
     "settings": {

@@ -504,10 +504,17 @@ Run the **Check toolchain** task any time to see what is missing.
 
 ## 12. Working on several modules
 
-`Py32f_ProjectTemplate` (PY32F040C1BT6) uses the same toolchain, make and pyOCD
-install; only the target (`PY32F040xB` / `PY32F040CxB`) and a few paths in its
-`.vscode` and `Makefile` differ. The same Puya DFP already contains the
-PY32F040 devices.
+There are two generic templates in this repository:
+
+| Template | MCU | Use it for |
+|----------|-----|------------|
+| `Py32f003_ProjectTemplate` | PY32F003F18P6TU | new PY32F003 modules (this project's MCU) |
+| `Py32f040_ProjectTemplate` | PY32F040C1BT6 | new PY32F040 modules |
+
+Both use the same toolchain, make and pyOCD install as this project; only the
+MCU type, linker script, SVD and pyOCD target differ. This project is
+essentially `Py32f003_ProjectTemplate` with the ultrasonic application added,
+which makes it a worked example of TIM input capture and an I2C slave.
 
 To work on both projects in one VS Code window, open the workspace file at the
 repository root:

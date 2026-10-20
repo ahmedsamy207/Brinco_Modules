@@ -15,10 +15,22 @@ write a Makefile or install a device pack.
 | Project | MCU | Core | Flash / RAM | Purpose |
 |---------|-----|------|-------------|---------|
 | `Py32f003_Ultrasonic` | **PY32F003F18P6TU** | Cortex-M0+ @ 24 MHz | 64 KB / 8 KB | ultrasonic distance sensor, I2C slave at `0x08` |
-| `Py32f_ProjectTemplate` | **PY32F040C1BT6** | Cortex-M0+ @ 72 MHz | 128 KB / 16 KB | template for new PY32F040 modules |
+| `Py32f003_ProjectTemplate` | **PY32F003F18P6TU** | Cortex-M0+ @ 24 MHz | 64 KB / 8 KB | **template** for new PY32F003 modules |
+| `Py32f040_ProjectTemplate` | **PY32F040C1BT6** | Cortex-M0+ @ 72 MHz | 128 KB / 16 KB | **template** for new PY32F040 modules |
 
-Both projects are **standalone**: they contain their own `.vscode` configuration,
-Makefile, bundled Puya device family pack, SVD and `pyocd.yaml`. They can be
+### Which template should I copy?
+
+| Your board's MCU | Copy this folder |
+|------------------|------------------|
+| PY32F003F18P6TU (TSSOP-20, 64 KB / 8 KB) | `Py32f003_ProjectTemplate` |
+| PY32F040C1BT6 (LQFP-48, 128 KB / 16 KB) | `Py32f040_ProjectTemplate` |
+
+Both templates are minimal but complete: clock setup, empty main loop, HAL
+configuration, debug configuration, bundled device family pack. You only write
+`User/Src/main.c`.
+
+Every project is **standalone**: it contains its own `.vscode` configuration,
+Makefile, bundled Puya device family pack, SVD and `pyocd.yaml`. Projects can be
 opened, built, flashed and debugged one at a time, or together through
 `Brinco_Modules.code-workspace`.
 
@@ -26,20 +38,25 @@ Repository layout:
 
 ```text
 Brinco_Modules/
-├─ README.md                       this file
-├─ Brinco_Modules.code-workspace   multi-root VS Code workspace (both projects)
-├─ Py32f003_Ultrasonic/            PY32F003 module
-│   ├─ .vscode/                    build/debug tasks, IntelliSense, extensions
-│   ├─ User/                       application code  <- you work here
-│   ├─ Libraries/                  CMSIS, HAL drivers, linker scripts
-│   ├─ Misc/                       SVD files for the debugger, J-Link scripts
-│   ├─ Tools/                      device family pack, PowerShell helpers, OpenOCD
-│   ├─ Makefile, rules.mk          build system
-│   ├─ pyocd.yaml                  pyOCD config (bundled pack, SWD clock)
-│   └─ SETUP_WINDOWS.md            detailed setup guide for this project
-└─ Py32f_ProjectTemplate/          PY32F040 template (same layout)
+├─ README.md                        this file
+├─ Brinco_Modules.code-workspace    multi-root VS Code workspace (all projects)
+├─ Py32f003_Ultrasonic/             finished PY32F003 module (worked example)
+│   ├─ .vscode/                     build/debug tasks, IntelliSense, extensions
+│   ├─ User/                        application code  <- you work here
+│   ├─ Libraries/                   CMSIS, HAL drivers, linker scripts
+│   ├─ Misc/                        SVD files for the debugger, J-Link scripts
+│   ├─ Tools/                       device family pack, PowerShell helpers, OpenOCD
+│   ├─ Makefile, rules.mk           build system
+│   ├─ pyocd.yaml                   pyOCD config (bundled pack, SWD clock)
+│   └─ SETUP_WINDOWS.md             detailed setup guide
+├─ Py32f003_ProjectTemplate/        PY32F003 template (same layout)
+│   └─ SETUP_WINDOWS.md
+└─ Py32f040_ProjectTemplate/        PY32F040 template (same layout)
     └─ SETUP_WINDOWS.md
 ```
+
+All three folders share the same structure, so anything you learn in one applies
+to the others.
 
 ---
 
@@ -62,10 +79,12 @@ anything except the Arm toolchain and probe driver installers.
 The detailed, copy-pasteable instructions for each item (with the exact
 installer names, PATH entries and driver links) are in:
 
+* [`Py32f003_ProjectTemplate/SETUP_WINDOWS.md`](Py32f003_ProjectTemplate/SETUP_WINDOWS.md)
+* [`Py32f040_ProjectTemplate/SETUP_WINDOWS.md`](Py32f040_ProjectTemplate/SETUP_WINDOWS.md)
 * [`Py32f003_Ultrasonic/SETUP_WINDOWS.md`](Py32f003_Ultrasonic/SETUP_WINDOWS.md)
-* [`Py32f_ProjectTemplate/SETUP_WINDOWS.md`](Py32f_ProjectTemplate/SETUP_WINDOWS.md)
 
-They are equivalent; read the one for the project you start with. Condensed
+They are equivalent; read the one for the project you start with (the template
+guides also cover the ST-Link wiring and the OpenOCD fallback). Condensed
 version:
 
 ```powershell
@@ -123,7 +142,8 @@ comfortable.
 #### A. One project at a time (recommended)
 
 ```powershell
-code Py32f003_Ultrasonic          # or: code Py32f_ProjectTemplate
+code Py32f003_Ultrasonic          # or: code Py32f003_ProjectTemplate
+                                  # or: code Py32f040_ProjectTemplate
 ```
 
 Opening the **project folder itself** is important: the build and debug paths
@@ -321,25 +341,38 @@ Typical flow for a new peripheral: enable its `HAL_*_MODULE_ENABLED` in
 Makefile edit is needed), add the `HAL_xxx_MspInit()` code in
 `py32f0xx_hal_msp.c`, then use the HAL from `main.c`.
 
-The **PY32F003** project is a complete example: TIM1 input capture, I2C1 slave
-at address `0x08` (command `0x35` returns the distance), exponential smoothing
-with alpha `0.25`, HSI at 24 MHz. The **PY32F040** project is a minimal template
-(72 MHz via PLL, `HAL_Delay(1000)` loop) to copy for each new module.
+The templates start you off with `HAL_Init()`, a working `SystemClock_Config()`
+(24 MHz HSI on PY32F003, 72 MHz via PLL on PY32F040) and an empty main loop.
+
+`Py32f003_Ultrasonic` is a complete worked example of the same skeleton:
+TIM1 input capture, I2C1 slave at address `0x08` (command `0x35` returns the
+distance), exponential smoothing with alpha `0.25`, HSI at 24 MHz. Comparing it
+with `Py32f003_ProjectTemplate` shows exactly what an application adds.
 
 ---
 
 ## Creating a new module
 
-1. Copy `Py32f_ProjectTemplate` to a new folder and rename it
-   (e.g. `Brinco_LED_Module`).
-2. Open the new folder in VS Code.
-3. Write the application in `User/Src`.
+1. Copy the template for your MCU (see [Which template should I copy?](#which-template-should-i-copy))
+   to a new folder inside the repository and rename it, e.g. `Brinco_LED_Module`:
+
+   ```powershell
+   Copy-Item -Recurse Py32f003_ProjectTemplate Brinco_LED_Module
+   ```
+
+2. Open the new folder in VS Code (`code Brinco_LED_Module`).
+3. Write the application in `User/Src/main.c` (and the MSP/IRQ files as needed).
 4. `make all` produces `Build\<FolderName>.elf` automatically: the Makefile
    derives `PROJECT` from the folder name and `launch.json` uses
    `${workspaceFolderBasename}`, so `F5` works with no edits.
 5. If the module uses a different PY32F0 part, change `MCU_TYPE` (build) and
-   `PYOCD_TARGET` (flash/debug) at the top of the `Makefile`. Every part of the
-   family is covered by the bundled pack.
+   `PYOCD_TARGET` (flash/debug) at the top of the `Makefile`, and update
+   `svdFile` in `.vscode/launch.json`. Every part of the family is covered by the
+   bundled pack.
+
+`Build\` and `Temp\` are ignored by git, but the copy itself is a normal
+folder in the repository: commit it, or add it to `.gitignore` if it is only a
+scratch experiment.
 
 ---
 
@@ -359,13 +392,14 @@ with alpha `0.25`, HSI at 24 MHz. The **PY32F040** project is a minimal template
 | OpenOCD: `init mode failed` | Target not powered, SWDIO and SWCLK swapped, or the chip is in a low-power mode - connect NRST and retry. |
 | `F5` stops with "GDB executable not found" | `arm-none-eabi-gdb` is not on PATH (comes with the Arm toolchain). |
 | IntelliSense shows red squiggles on `py32f0xx.h` | Pick `PY32F003 (arm-none-eabi)` / `PY32F040 (arm-none-eabi)` in the C/C++ status bar item; make sure `arm-none-eabi-gcc` is on PATH. |
-| Wrong SVD/peripherals in the debug session | Check `svdFile` in `launch.json` - `py32f003xx.svd` for the ultrasonic module, `py32f040cxx.svd` for the template. |
+| Wrong SVD/peripherals in the debug session | Check `svdFile` in `launch.json` - `py32f003xx.svd` for PY32F003 projects, `py32f040cxx.svd` for PY32F040. |
 | After renaming a project folder, `F5` looks in the old path | `PROJECT` follows the folder name; run `make clean` to drop the old `Build\<OldName>.elf`. |
 | `region RAM overflowed` at link | Out of RAM (8 KB on PY32F003, 16 KB on PY32F040). Check buffers, `printf` usage and large stack arrays. |
 
 Per-project guides have longer troubleshooting tables:
-[PY32F003](Py32f003_Ultrasonic/SETUP_WINDOWS.md#11-troubleshooting) ·
-[PY32F040](Py32f_ProjectTemplate/SETUP_WINDOWS.md#11-troubleshooting).
+[PY32F003 template](Py32f003_ProjectTemplate/SETUP_WINDOWS.md#11-troubleshooting) ·
+[PY32F040 template](Py32f040_ProjectTemplate/SETUP_WINDOWS.md#11-troubleshooting) ·
+[PY32F003 ultrasonic](Py32f003_Ultrasonic/SETUP_WINDOWS.md#11-troubleshooting).
 
 ---
 
