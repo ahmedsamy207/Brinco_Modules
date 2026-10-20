@@ -319,3 +319,15 @@ Run the **Check toolchain** task any time to see what is missing.
 If you add peripherals, enable the matching `HAL_*_MODULE_ENABLED` in
 `User/Inc/py32f040_hal_conf.h`; the HAL driver sources are already all compiled,
 so no Makefile change is needed.
+
+## 13. Working on several modules
+
+Open the workspace file at the repository root to get this template and
+`Py32f003_Ultrasonic` in the same window:
+
+```powershell
+code ..\Brinco_Modules.code-workspace
+```
+
+See the [repository README](../README.md#2-open-the-workspace) for the
+multi-root details (window-scoped settings, duplicate task labels).

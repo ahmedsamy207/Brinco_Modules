@@ -416,9 +416,19 @@ Run the **Check toolchain** task any time to see what is missing.
 
 ---
 
-## 12. Next project
+## 12. Working on several modules
 
 `Py32f_ProjectTemplate` (PY32F040C1BT6) uses the same toolchain, make and pyOCD
 install; only the target (`PY32F040xB` / `PY32F040CxB`) and a few paths in its
 `.vscode` and `Makefile` differ. The same Puya DFP already contains the
-PY32F040 devices. That project is the next step.
+PY32F040 devices.
+
+To work on both projects in one VS Code window, open the workspace file at the
+repository root:
+
+```powershell
+code ..\Brinco_Modules.code-workspace
+```
+
+More detail, including the multi-root caveats, is in the
+[repository README](../README.md#2-open-the-workspace).

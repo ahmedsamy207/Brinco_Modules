@@ -1,0 +1,55 @@
+{
+    // Multi-root workspace for the whole repository.
+    // Open it with:   code Brinco_Modules.code-workspace
+    //
+    // Each project folder also works on its own (File > Open Folder). Use this
+    // file when you want both modules, plus the repository docs, in one window.
+    "folders": [
+        {
+            "name": "Brinco Modules (repo)",
+            "path": "."
+        },
+        {
+            "name": "PY32F003 - Ultrasonic",
+            "path": "Py32f003_Ultrasonic"
+        },
+        {
+            "name": "PY32F040 - Template",
+            "path": "Py32f_ProjectTemplate"
+        }
+    ],
+    "settings": {
+        // The settings below are "window" scoped, so VS Code ignores them when
+        // they live in a project's .vscode/settings.json inside a multi-root
+        // window. They are repeated here so F5 works in this workspace too.
+        // If you upgrade Python, change Python314 in the path below AND in each
+        // project's .vscode/settings.json.
+        "cortex-debug.pyocdPath.windows": "${env:APPDATA}/Python/Python314/Scripts/pyocd.exe",
+        "cortex-debug.variableUseNaturalFormat": true,
+
+        // Build output and virtual environments are noise in the explorer.
+        // Build/ is deliberately left visible so the .elf/.hex are easy to find.
+        "files.exclude": {
+            "**/Temp": true,
+            "**/.venv": true
+        },
+        "search.exclude": {
+            "**/Build": true,
+            "**/Temp": true,
+            "**/.venv": true,
+            "**/Tools/openocd-puya": true
+        },
+        "files.watcherExclude": {
+            "**/Build/**": true,
+            "**/Temp/**": true,
+            "**/.venv/**": true
+        }
+    },
+    "extensions": {
+        "recommendations": [
+            "ms-vscode.cpptools",
+            "marus25.cortex-debug",
+            "ms-vscode.makefile-tools"
+        ]
+    }
+}

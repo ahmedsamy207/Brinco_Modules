@@ -29,19 +29,21 @@ endif
 # Toolchain
 ###############################################################################
 
+# The executable is quoted as a whole, so a toolchain installed under
+# "C:\Program Files (x86)\..." (spaces are the default on Windows) works too.
 ifneq ($(ARM_TOOLCHAIN),)
-    PREFIX := $(ARM_TOOLCHAIN)/arm-none-eabi-
+    ARM_BIN := $(ARM_TOOLCHAIN)/
 else
-    PREFIX := arm-none-eabi-
+    ARM_BIN :=
 endif
 
 
-CC      := $(PREFIX)gcc
-XX      := $(PREFIX)g++
-AS      := $(PREFIX)as
-LD      := $(PREFIX)ld
-OBJCOPY := $(PREFIX)objcopy
-OBJDUMP := $(PREFIX)objdump
+CC      := "$(ARM_BIN)arm-none-eabi-gcc"
+XX      := "$(ARM_BIN)arm-none-eabi-g++"
+AS      := "$(ARM_BIN)arm-none-eabi-as"
+LD      := "$(ARM_BIN)arm-none-eabi-ld"
+OBJCOPY := "$(ARM_BIN)arm-none-eabi-objcopy"
+OBJDUMP := "$(ARM_BIN)arm-none-eabi-objdump"
 
 
 
