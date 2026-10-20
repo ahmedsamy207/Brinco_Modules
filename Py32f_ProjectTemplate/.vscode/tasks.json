@@ -1,0 +1,36 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build",
+            "group": "build",
+            "type": "shell",
+            "command": "make",
+            "args": ["all"],
+            "problemMatcher": []
+        },
+        {
+            "label": "Start pyOCD Server",
+            "type": "shell",
+            "command": "pyocd gdbserver --port 50000 --telnet-port 50001 --target PY32F040xB",
+            "isBackground": true,
+            "problemMatcher": {
+                "pattern": [
+                    {
+                        "regexp": ".",
+                        "file": 1,
+                        "location": 2,
+                        "message": 3
+                    }
+                ],
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": ".*",
+                    "endsPattern": "GDB server started on port 50000"
+                }
+            }
+        }
+    ]
+}

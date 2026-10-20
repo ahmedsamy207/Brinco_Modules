@@ -1,0 +1,32 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Cortex Debug OpenOCD Launch",
+			"type": "cortex-debug",
+			"request": "launch",
+			"toolchainPrefix": "arm-none-eabi",
+			"servertype": "openocd",
+			"configFiles": ["py32f0xx.cfg"],
+			"searchDir": ["${config:openocd.scriptsPath}"],
+			"executable": "${workspaceFolder}/Build/${workspaceFolderBasename}.elf",
+			"runToEntryPoint": "main",
+			"preLaunchTask": "Build",
+			"svdFile": "${workspaceFolder}/Misc/SVD/py32f002axx.svd",
+			"showDevDebugOutput": "raw"
+		},
+		{
+			"name": "Cortex Debug OpenOCD Attach",
+			"type": "cortex-debug",
+			"request": "attach",
+			"toolchainPrefix": "arm-none-eabi",
+			"servertype": "openocd",
+			"configFiles": ["py32f0xx.cfg"],
+			"searchDir": ["${config:openocd.scriptsPath}"],
+			"executable": "${workspaceFolder}/Build/${workspaceFolderBasename}.elf",
+			"runToEntryPoint": "main",
+			"svdFile": "${workspaceFolder}/Misc/SVD/py32f002axx.svd",
+			"showDevDebugOutput": "raw"
+		}
+	]
+}
