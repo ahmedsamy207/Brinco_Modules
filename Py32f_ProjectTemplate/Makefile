@@ -1,6 +1,8 @@
 ##### Project ###############################################################
 
-PROJECT ?= Py32f_ProjectTemplate
+# Defaults to the folder name, so a copy of this template builds
+# Build\<FolderName>.elf - which is what .vscode/launch.json expects.
+PROJECT ?= $(notdir $(CURDIR))
 
 # Generated files
 TEMP_DIR  := Temp
@@ -14,7 +16,7 @@ BUILD_DIR := Build
 # PY32F002Bx5
 # PY32F003x4, PY32F003x6, PY32F003x8
 # PY32F030x6, PY32F030x8
-# PY32F040x6, PY32F040x8, PY32F040xB
+# PY32F040x6, PY32F040x8, PY32F040xB  (PY32F040C1BT6 uses PY32F040xB)
 # PY32F072xB
 
 MCU_TYPE := PY32F040xB
@@ -39,7 +41,18 @@ ARM_TOOLCHAIN ?=
 
 JLINKEXE ?=
 
-PYOCD_EXE ?= pyocd
+# pyOCD resolution order:
+#   1. PYOCD_EXE from the command line or the environment
+#   2. the project virtual environment created by Tools/setup-pyocd.ps1
+#   3. the Python launcher ("py -m pyocd"), which also works when the per-user
+#      Scripts folder (e.g. %APPDATA%\Python\Python314\Scripts) is not in PATH
+# Put quotes inside the value if the path contains spaces, e.g.
+#   make flash PYOCD_EXE="C:\Users\Ahmed Samy\AppData\Roaming\Python\Python314\Scripts\pyocd.exe"
+PYOCD_VENV ?= $(wildcard .venv/Scripts/pyocd.exe)
+PYOCD_EXE ?= $(if $(PYOCD_VENV),"$(PYOCD_VENV)",py -m pyocd)
+
+# CMSIS device family pack that teaches pyOCD about the PY32F0 parts.
+PYOCD_PACK ?= $(TOP)/Tools/packs/Puya.PY32F0xx_DFP.1.2.0.pack
 
 
 # OS detection
@@ -50,18 +63,31 @@ else
 endif
 
 
+# pyOCD / CMSIS-Pack target for the real part.
+# PY32F040C1BT6 is the 48-pin (C) package with 128 KB flash / 16 KB SRAM,
+# so py32f040cxb is the exact target. It has the same memory map and flash
+# algorithm as PY32F040xB, which MCU_TYPE selects for the build.
+PYOCD_TARGET ?= PY32F040CxB
+
+
 # Convert MCU name
+# NOTE: 'tr' does not exist in cmd.exe/PowerShell, so Windows uses PowerShell.
 ifeq ($(HOST_OS),Windows)
 
-    JLINK_DEVICE := $(shell powershell -Command "'$(MCU_TYPE)'.ToUpper()")
-    PYOCD_DEVICE := $(shell powershell -Command "'$(MCU_TYPE)'.ToLower()")
+    MCU_TYPE_UPPER := $(shell powershell -NoProfile -Command "'$(MCU_TYPE)'.ToUpper()")
+    MCU_TYPE_LOWER := $(shell powershell -NoProfile -Command "'$(MCU_TYPE)'.ToLower()")
+    PYOCD_TARGET_LOWER := $(shell powershell -NoProfile -Command "'$(PYOCD_TARGET)'.ToLower()")
 
 else
 
-    JLINK_DEVICE := $(shell echo $(MCU_TYPE) | tr '[:lower:]' '[:upper:]')
-    PYOCD_DEVICE := $(shell echo $(MCU_TYPE) | tr '[:upper:]' '[:lower:]')
+    MCU_TYPE_UPPER := $(shell echo $(MCU_TYPE) | tr '[:lower:]' '[:upper:]')
+    MCU_TYPE_LOWER := $(shell echo $(MCU_TYPE) | tr '[:upper:]' '[:lower:]')
+    PYOCD_TARGET_LOWER := $(shell echo $(PYOCD_TARGET) | tr '[:upper:]' '[:lower:]')
 
 endif
+
+JLINK_DEVICE ?= $(MCU_TYPE_UPPER)
+PYOCD_DEVICE ?= $(PYOCD_TARGET_LOWER)
 
 
 
@@ -98,7 +124,7 @@ endif
 
 ##### Linker script #########################################################
 
-LDSCRIPT = Libraries/LDScripts/$(shell echo $(MCU_TYPE) | tr '[:upper:]' '[:lower:]').ld
+LDSCRIPT = Libraries/LDScripts/$(MCU_TYPE_LOWER).ld
 
 
 
