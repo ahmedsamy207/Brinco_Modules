@@ -132,21 +132,93 @@ pyOCD ships its own `libusb` DLL; nothing else is needed for USB probes.
 
 ---
 
-## 5. Debug probe driver
+## 5. Debug probe: ST-Link V2 (and alternatives)
+
+**This project is set up for an ST-Link V2.** Two independent paths work with
+it, and both are configured already:
+
+| Path | Command | Used by |
+|------|---------|---------|
+| **pyOCD** (default) | `make flash` | `F5` -> *Debug (pyOCD)* |
+| **OpenOCD** (Puya build) | `make flash-openocd` | `F5` -> *Debug (OpenOCD, ST-Link)* |
+
+There is no need to choose up front: try `make flash` first, and switch to
+`make flash-openocd` if pyOCD cannot talk to the target (see below).
+
+### Driver
+
+Install **STSW-LINK009** from ST:
+<https://www.st.com/en/development-tools/stsw-link009.html>
+
+It is a signed WinUSB driver, so it works for **both** pyOCD (libusb) and the
+bundled OpenOCD. No Zadig is needed.
+
+* Device Manager should show `STMicroelectronics STLink dongle` without a
+  warning triangle.
+* If you already installed Zadig/libusbK for another tool, that also works -
+  both paths use libusb.
+* If the probe does not appear at all, uninstall any "unknown device" entry,
+  replug it, and re-run the STSW-LINK009 installer.
+
+### Wiring (ST-Link V2, 20-pin or 4-pin header)
+
+| ST-Link | Target |
+|---------|--------|
+| `SWDIO` (pin 7) | `SWDIO` / `DIO` |
+| `SWCLK` (pin 9) | `SWCLK` / `CLK` |
+| `GND` (pin 4/6/8...) | `GND` |
+| `3.3V` (pin 1/2) | `3V3` - **only** if the board is not already powered |
+| `NRST` (pin 15) | `NRST` - optional, helps if the chip is in a low-power mode |
+
+Never connect the 5 V pin to the target. Keep the wires short (10 cm) for
+reliable SWD; long jumper wires are the usual cause of "cannot connect".
+
+### Check that the probe is visible
+
+```powershell
+py -m pyocd list
+```
+
+Expected, for an ST-Link V2:
+
+```text
+  #   Probe/Board     Unique ID       Target
+  ------------------------------------------------------
+  0   STLink          <serial>        n/a
+```
+
+### If pyOCD cannot connect: use OpenOCD
+
+Recent **genuine ST** firmware only allows STM32 targets and refuses a PY32
+part; cheap ST-Link V2 clones are not affected. That is why Puya's own OpenOCD
+build is committed in `Tools/openocd-puya/`:
+
+```powershell
+make flash-openocd        # program Build\<Project>.hex (verify + reset)
+make erase-openocd        # full chip erase
+```
+
+or the VS Code tasks **Flash (OpenOCD / ST-Link)** and
+**Erase chip (OpenOCD / ST-Link)**, or `F5` with
+*Debug (OpenOCD, ST-Link)*.
+
+The config `Tools/openocd-puya/stlink-py32f040.cfg` sets the flash size for this part,
+selects `dapdirect_swd` (the vendor script runs SWD at a conservative
+100 kHz, which is reliable and still fast enough for these image sizes).
+
+Two OpenOCD errors are worth knowing:
+
+* `Error: open failed` - the USB driver is not libusb-compatible (install
+  STSW-LINK009), or another program already owns the probe.
+* no DAP / `unable to find a matching transport` - the ST-Link firmware is
+  older than V2J24 (2015). Upgrade it with STSW-LINK007, or use a DAPLink.
+
+### Other probes
 
 | Probe | What to install |
 |-------|-----------------|
-| **ST-Link V2 / V2-1 / V3** | STSW-LINK009 from ST: <https://www.st.com/en/development-tools/stsw-link009.html> |
-| **CMSIS-DAP / DAPLink** | Nothing - WinUSB/HID on Windows 10/11 is enough |
-| **J-Link** | SEGGER J-Link Software Pack |
-
-```powershell
-pyocd list          # or: py -m pyocd list
-```
-
-> Recent **official** ST-Link firmware only allows STM32 targets. Many clones
-> work fine with the PY32; if connecting fails while the probe is listed, try a
-> DAPLink/CMSIS-DAP or a J-Link.
+| **CMSIS-DAP / DAPLink** | Nothing - WinUSB/HID on Windows 10/11 is enough. Point `interface/stlink-dap.cfg` at `interface/cmsis-dap.cfg`. |
+| **J-Link** | SEGGER J-Link Software Pack. `make flash FLASH_PROGRM=jlink JLINKEXE="C:\Program Files\SEGGER\JLink\JLink.exe"` |
 
 ---
 
@@ -232,6 +304,14 @@ pyocd load  -t py32f040cxb --pack .\Tools\packs\Puya.PY32F0xx_DFP.1.2.0.pack .\B
 
 Or use the VS Code tasks **Flash (pyOCD)** / **Erase chip (pyOCD)**.
 
+**With an ST-Link V2, the OpenOCD path is the fallback** when pyOCD cannot
+connect (see section 5):
+
+```powershell
+make flash-openocd    # program, verify, reset
+make erase-openocd    # full chip erase
+```
+
 J-Link instead of pyOCD:
 
 ```powershell
@@ -259,9 +339,11 @@ Peripherals** view.
 | **Debug (OpenOCD, ST-Link)** | bundled `Tools\openocd-puya\bin\openocd.exe` |
 | **Attach (OpenOCD, ST-Link)** | attach with OpenOCD |
 
-The OpenOCD configs use `Tools\openocd-puya\script\py32f0xx.cfg`, which sources
-`interface/stlink.cfg`. For DAPLink, change that line to
-`source [find interface/cmsis-dap.cfg]`.
+The OpenOCD configurations use `Tools\openocd-puya\stlink-py32f040.cfg`, which sets the
+flash size for this part, selects `dapdirect_swd` for ST-Link and then
+sources the Puya `target/py32f0xx.cfg`. For a DAPLink probe, copy that file
+and replace `interface/stlink-dap.cfg` with `interface/cmsis-dap.cfg` (and
+drop the `transport select` line).
 
 ---
 
@@ -282,6 +364,11 @@ The OpenOCD configs use `Tools\openocd-puya\script\py32f0xx.cfg`, which sources
 | `Misc/jlink-command` | loads `Build/Py32f_ProjectTemplate.hex` instead of the non-existent `Build/app.hex` |
 | `.vscode/*` | `cl.exe`-less ARM IntelliSense config, working pyOCD/OpenOCD launch configs, Build/Clean/Flash/Erase/setup/check tasks, removed the hard-coded `C:/Users/Ahmed Samy/Downloads/...` CMake path and the hard-coded remote IP configs |
 | `Tools/*.ps1` | setup/check/install helpers adapted to `py32f040cxb` |
+| `rules.mk` | **new** `flash-openocd` / `erase-openocd` targets and `FLASH_PROGRM=openocd`, so the ST-Link V2 can program through the bundled OpenOCD |
+| `Tools/openocd-puya/stlink-py32f003.cfg` / `stlink-py32f040.cfg` | **new** ST-Link session: sets the flash size and uses `dapdirect_swd`. The stock `script/py32f0xx.cfg` sources the deprecated `hla` driver, which cannot create the DAP that `target/py32f0xx.cfg` needs |
+| `.vscode/launch.json` | OpenOCD configurations point at the new ST-Link session instead of the broken `py32f0xx.cfg` |
+| `.vscode/tasks.json` | **new** tasks *Flash (OpenOCD / ST-Link)* and *Erase chip (OpenOCD / ST-Link)* |
+| `Tools/check-env.ps1` | also reports the bundled OpenOCD and prints ST-Link hints |
 
 Run the **Check toolchain** task any time to see what is missing.
 
@@ -297,7 +384,11 @@ Run the **Check toolchain** task any time to see what is missing.
 | `The system cannot find the path specified` during build | Run `make` in PowerShell/cmd, not Git Bash. `rules.mk` pins `cmd.exe`, but a stale checkout may not have the fix. |
 | `pyocd: unrecognized target type: py32f040cxb` | Run pyOCD from the project folder (so `pyocd.yaml` is read), pass `--pack Tools\packs\Puya.PY32F0xx_DFP.1.2.0.pack`, or run `Tools\install-py32-pack.ps1`. |
 | `pyocd list` shows no probe | Install the probe driver (STSW-LINK009 for ST-Link), try another cable/port, avoid hubs. |
-| Probe listed but cannot connect | Official ST-Link firmware may block non-ST targets; check SWDIO/SWCLK/GND/3V3 and target power. |
+| pyOCD sees the probe but cannot connect | Check SWDIO/SWCLK/GND/3V3 and target power first, then try `make flash-openocd`. Genuine ST-Link firmware may refuse non-ST targets; clones and DAPLink/J-Link are not affected. |
+| OpenOCD: `Error: open failed` | The probe driver is not libusb-compatible - install STSW-LINK009. Another program may also hold the probe (STM32CubeProgrammer, ST-Link Utility, a second debug session). |
+| OpenOCD: no DAP / `unable to find a matching transport` | ST-Link firmware older than V2J24; upgrade with STSW-LINK007 or use a DAPLink. |
+| OpenOCD: `init mode failed` / target not examined | Target not powered, SWDIO and SWCLK swapped, or the chip is in a low-power mode - connect NRST and retry. |
+| OpenOCD: `verify failed` | The flash driver could not read back. Program without verify: `make flash-openocd OPENOCD_PROGRAM_ARGS="reset exit"`. |
 | `Cortex-Debug: GDB executable not found` | `arm-none-eabi-gdb` is not on PATH; install the Arm toolchain or set `cortex-debug.gdbPath`. |
 | IntelliSense cannot open `py32f0xx.h` | Select the `PY32F040 (arm-none-eabi)` config in the C/C++ status bar item; make sure `arm-none-eabi-gcc` is on PATH. |
 | F5 uses the wrong ELF after renaming the folder | `PROJECT` follows the folder name; run `make clean` so the old `Build\<OldName>.elf` is removed. |

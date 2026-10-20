@@ -43,10 +43,11 @@
             "cwd": "${workspaceFolder}",
             "serverpath": "${workspaceFolder}/Tools/openocd-puya/bin/openocd.exe",
             "configFiles": [
-                "py32f0xx.cfg"
+                "${workspaceFolder}/Tools/openocd-puya/stlink-py32f040.cfg"
             ],
             "searchDir": [
-                "${workspaceFolder}/Tools/openocd-puya/script"
+                "${workspaceFolder}/Tools/openocd-puya/script",
+                "${workspaceFolder}/Tools/openocd-puya"
             ],
             "executable": "${workspaceFolder}/Build/${workspaceFolderBasename}.elf",
             "svdFile": "${workspaceFolder}/Misc/SVD/py32f040cxx.svd",
@@ -62,10 +63,11 @@
             "cwd": "${workspaceFolder}",
             "serverpath": "${workspaceFolder}/Tools/openocd-puya/bin/openocd.exe",
             "configFiles": [
-                "py32f0xx.cfg"
+                "${workspaceFolder}/Tools/openocd-puya/stlink-py32f040.cfg"
             ],
             "searchDir": [
-                "${workspaceFolder}/Tools/openocd-puya/script"
+                "${workspaceFolder}/Tools/openocd-puya/script",
+                "${workspaceFolder}/Tools/openocd-puya"
             ],
             "executable": "${workspaceFolder}/Build/${workspaceFolderBasename}.elf",
             "svdFile": "${workspaceFolder}/Misc/SVD/py32f040cxx.svd",

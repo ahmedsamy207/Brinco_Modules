@@ -61,6 +61,30 @@
             "problemMatcher": []
         },
         {
+            "label": "Flash (OpenOCD / ST-Link)",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "flash-openocd"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Erase chip (OpenOCD / ST-Link)",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "erase-openocd"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
             "label": "Set up pyOCD (local venv)",
             "type": "shell",
             "command": "powershell",

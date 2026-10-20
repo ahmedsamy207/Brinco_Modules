@@ -56,7 +56,7 @@ anything except the Arm toolchain and probe driver installers.
 | 2 | [Arm GNU Toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads) | compiling | `arm-none-eabi-gcc --version` |
 | 3 | [GNU Make 4.4.1](https://sourceforge.net/projects/ezwinports/files/) | running the build | `make --version` |
 | 4 | [Python 3](https://www.python.org/downloads/windows/) + pyOCD | flashing, debugging | `py -m pyocd --version` |
-| 5 | Probe driver (ST-Link / DAPLink / J-Link) | talking to the board | `py -m pyocd list` |
+| 5 | **ST-Link V2** driver (STSW-LINK009), or DAPLink / J-Link | talking to the board | `py -m pyocd list` |
 | 6 | VS Code extensions | IntelliSense, debugging | Extensions view |
 
 The detailed, copy-pasteable instructions for each item (with the exact
@@ -202,6 +202,56 @@ or press `Ctrl+Shift+B` in VS Code. Output lands in `Build\`:
 
 ---
 
+## Flashing with the ST-Link V2
+
+The modules are programmed with an **ST-Link V2**. Everything for it is already
+configured; there are two independent paths and you can use whichever works:
+
+| Path | Command | VS Code |
+|------|---------|---------|
+| pyOCD (default) | `make flash` | `F5` -> *Debug (pyOCD)* |
+| OpenOCD (Puya build) | `make flash-openocd` | `F5` -> *Debug (OpenOCD, ST-Link)* |
+
+Try `make flash` first. If pyOCD reports that it cannot connect, use the
+OpenOCD path - it is Puya's own OpenOCD build with their PY32 flash driver.
+
+### Driver
+
+Install **STSW-LINK009** (<https://www.st.com/en/development-tools/stsw-link009.html>).
+It is a signed WinUSB driver, so both pyOCD (libusb) and OpenOCD can use it -
+**no Zadig needed**.
+
+### Wiring
+
+| ST-Link V2 | Target |
+|------------|--------|
+| `SWDIO` | `SWDIO` / `DIO` |
+| `SWCLK` | `SWCLK` / `CLK` |
+| `GND` | `GND` |
+| `3.3V` | `3V3`, only if the board is not already powered |
+| `NRST` | `NRST`, optional; helps when the chip is in a low-power mode |
+
+Never connect the ST-Link's 5 V pin to the target. Keep the wires short - long
+jumper wires are the most common cause of connection failures.
+
+### Why there are two tools
+
+Recent **genuine ST** firmware only allows STM32 targets and refuses a PY32
+part. Cheap ST-Link V2 clones (and older firmware) are not restricted, so
+pyOCD usually works. When it does not, OpenOCD with Puya's flash driver does:
+
+```powershell
+make flash-openocd     # program + verify + reset
+make erase-openocd     # full chip erase
+```
+
+Both use `Tools/openocd-puya/stlink-py32f003.cfg` (or `…-py32f040.cfg`), which sets
+the correct flash size and selects `dapdirect_swd`. The vendor script keeps SWD
+at a conservative 100 kHz - slow, but tolerant of wiring and still only a few
+seconds for these image sizes.
+
+---
+
 ## Day-to-day workflow
 
 | Action | VS Code | Command line |
@@ -210,6 +260,8 @@ or press `Ctrl+Shift+B` in VS Code. Output lands in `Build\`:
 | Clean | `Ctrl+Shift+P` -> Tasks: Run Task -> Clean | `make clean` |
 | Flash | Tasks: Run Task -> **Flash (pyOCD)** | `make flash` |
 | Erase chip | Tasks: Run Task -> **Erase chip (pyOCD)** | `make erase` |
+| Flash via ST-Link with OpenOCD | Tasks: Run Task -> **Flash (OpenOCD / ST-Link)** | `make flash-openocd` |
+| Erase via ST-Link with OpenOCD | Tasks: Run Task -> **Erase chip (OpenOCD / ST-Link)** | `make erase-openocd` |
 | Debug | `F5` (**Debug (pyOCD)**) - builds and flashes first | - |
 | Attach to running target | Run and Debug -> **Attach (pyOCD)** | - |
 | See the build command | - | `make -n all` |
@@ -223,7 +275,9 @@ or press `Ctrl+Shift+B` in VS Code. Output lands in `Build\`:
 | `all` | `.elf`, `.hex`, `.bin`, `.lst` in `Build\` |
 | `clean` | removes `Temp\` and `Build\` |
 | `flash` | erase + program over SWD via pyOCD |
-| `erase` | erase the whole chip |
+| `erase` | erase the whole chip (pyOCD) |
+| `flash-openocd` | program + verify + reset through OpenOCD and the ST-Link |
+| `erase-openocd` | full chip erase through OpenOCD |
 | `echo` | prints the resolved source file, include and object lists |
 
 | Variable | Default | Meaning |
@@ -233,7 +287,9 @@ or press `Ctrl+Shift+B` in VS Code. Output lands in `Build\`:
 | `PYOCD_TARGET` | `py32f003x8` / `PY32F040CxB` | CMSIS-Pack target used for flash/debug |
 | `PYOCD_EXE` | `.venv\Scripts\pyocd.exe`, else `py -m pyocd` | how pyOCD is invoked |
 | `PYOCD_PACK` | `Tools/packs/Puya.PY32F0xx_DFP.1.2.0.pack` | device family pack |
-| `FLASH_PROGRM` | `pyocd` | or `jlink` (`make flash FLASH_PROGRM=jlink JLINKEXE=...`) |
+| `FLASH_PROGRM` | `pyocd` | or `jlink`, or `openocd` (`make flash FLASH_PROGRM=openocd`) |
+| `OPENOCD_EXE` | `Tools/openocd-puya/bin/openocd.exe` | bundled Puya OpenOCD 0.12 |
+| `OPENOCD_CFG` | `Tools/openocd-puya/stlink-py32f003.cfg` / `…-py32f040.cfg` | ST-Link session (flash size + `dapdirect_swd`) |
 | `ARM_TOOLCHAIN` | empty | set to the toolchain `bin` folder if it is not on PATH |
 | `V` | `0` | `1` prints every command |
 
@@ -296,8 +352,11 @@ with alpha `0.25`, HSI at 24 MHz. The **PY32F040** project is a minimal template
 | `pyocd : not recognized` | See the note in [section 0](#0-checklist); the projects do not require it. |
 | `make` fails with `The system cannot find the path specified` | You are running it in Git Bash. Use PowerShell or `cmd.exe` (the Makefile pins `cmd.exe` itself), or delete a stale `Temp\` folder. |
 | `pyocd: unrecognized target type` | Run pyOCD from the project folder (so `pyocd.yaml` is found), or pass `--pack Tools\packs\Puya.PY32F0xx_DFP.1.2.0.pack`. |
-| `pyocd list` shows no probe | Install the probe driver (ST-Link: STSW-LINK009), try another cable/port, avoid USB hubs, check target power. |
-| Probe listed but cannot connect | Recent official ST-Link firmware only allows STM32 parts. Use a DAPLink/CMSIS-DAP, a J-Link, or the bundled OpenOCD configs. |
+| `pyocd list` shows no probe | Install the ST-Link driver (STSW-LINK009), try another cable/port, avoid USB hubs, check target power. In Device Manager the probe must appear without a warning triangle. |
+| pyOCD sees the probe but cannot connect | Check SWDIO/SWCLK/GND/3V3 wiring first, then use `make flash-openocd`. Recent **genuine** ST-Link firmware only allows STM32 parts; clones are not affected. |
+| OpenOCD: `Error: open failed` | The probe driver is not libusb-compatible (install STSW-LINK009), or another program holds the probe (STM32CubeProgrammer, ST-Link Utility, a second debug session). |
+| OpenOCD: no DAP / `unable to find a matching transport` | ST-Link firmware older than V2J24; upgrade with STSW-LINK007 or use a DAPLink. |
+| OpenOCD: `init mode failed` | Target not powered, SWDIO and SWCLK swapped, or the chip is in a low-power mode - connect NRST and retry. |
 | `F5` stops with "GDB executable not found" | `arm-none-eabi-gdb` is not on PATH (comes with the Arm toolchain). |
 | IntelliSense shows red squiggles on `py32f0xx.h` | Pick `PY32F003 (arm-none-eabi)` / `PY32F040 (arm-none-eabi)` in the C/C++ status bar item; make sure `arm-none-eabi-gcc` is on PATH. |
 | Wrong SVD/peripherals in the debug session | Check `svdFile` in `launch.json` - `py32f003xx.svd` for the ultrasonic module, `py32f040cxx.svd` for the template. |
@@ -318,6 +377,7 @@ Per-project guides have longer troubleshooting tables:
 | GNU Make for Windows | ezwinports 4.4.1 |
 | Python | 3.12+ (3.14 tested) |
 | pyOCD | 0.46.x |
+| OpenOCD (bundled, ST-Link) | Puya build 0.12.0 with the `puyaf0x` flash driver |
 | Puya `PY32F0xx_DFP` | 1.2.0, committed in `Tools/packs/` of each project |
 
 The device family pack is in the repository on purpose: no `pyocd pack install`,

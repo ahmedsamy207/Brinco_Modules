@@ -29,6 +29,19 @@ OBJDUMP     = "$(ARM_BIN)arm-none-eabi-objdump"
 
 # Project config
 TOP         := .
+
+# OpenOCD (the bundled Puya build) - the ST-Link V2 / V2-1 programming path
+OPENOCD_EXE     ?= $(TOP)/Tools/openocd-puya/bin/openocd.exe
+OPENOCD_SCRIPTS ?= $(TOP)/Tools/openocd-puya/script
+OPENOCD_DIR     ?= $(TOP)/Tools/openocd-puya
+OPENOCD_CFG     ?= $(OPENOCD_DIR)/stlink-py32f003.cfg
+# Flash bank size used by `erase-openocd` (64 KB on PY32F003x8)
+OPENOCD_FLASH_SIZE ?= 0x10000
+# Drop "verify" from here if the flash driver cannot read back:
+#   make flash-openocd OPENOCD_PROGRAM_ARGS="reset exit"
+OPENOCD_PROGRAM_ARGS ?= verify reset exit
+
+OPENOCD_CMD = "$(OPENOCD_EXE)" -s "$(OPENOCD_SCRIPTS)" -s "$(OPENOCD_DIR)" -f "$(OPENOCD_CFG)"
 TDIR        := $(TOP)/$(TEMP_DIR)
 BDIR        := $(TOP)/$(BUILD_DIR)
 
@@ -79,7 +92,7 @@ endif
 TGT_INCFLAGS := $(addprefix -I$(TOP)/, $(INCLUDES))
 
 # Targets
-.PHONY: all clean flash erase echo
+.PHONY: all clean flash erase echo flash-openocd erase-openocd
 
 all: $(BDIR)/$(PROJECT).elf $(BDIR)/$(PROJECT).bin $(BDIR)/$(PROJECT).hex $(BDIR)/$(PROJECT).lst
 
@@ -143,13 +156,30 @@ else
 	@echo erase is only implemented for FLASH_PROGRM=pyocd
 endif
 
+# Flash / erase through OpenOCD + ST-Link V2 (hex avoids AT>FLASH surprises)
+flash-openocd: $(BDIR)/$(PROJECT).hex
+	$(OPENOCD_CMD) -c "program $(BDIR)/$(PROJECT).hex $(OPENOCD_PROGRAM_ARGS)"
+
+erase-openocd:
+	$(OPENOCD_CMD) -c "init; reset halt; flash erase_address 0x08000000 $(OPENOCD_FLASH_SIZE); shutdown"
+
+# What `make flash` needs: the hex for OpenOCD (pure flash content, no RAM
+# sections), the ELF for pyOCD and J-Link.
+ifeq ($(FLASH_PROGRM),openocd)
+FLASH_IMAGE := $(BDIR)/$(PROJECT).hex
+else
+FLASH_IMAGE := $(BDIR)/$(PROJECT).elf
+endif
+
 # Flash (optional)
-flash: $(BDIR)/$(PROJECT).elf
+flash: $(FLASH_IMAGE)
 ifeq ($(FLASH_PROGRM),jlink)
 	$(JLINKEXE) -device $(JLINK_DEVICE) -if swd -speed 4000 -JLinkScriptFile $(TOP)/Misc/jlink-script -CommanderScript $(TOP)/Misc/jlink-command
 else ifeq ($(FLASH_PROGRM),pyocd)
 	$(PYOCD_EXE) erase -t $(PYOCD_DEVICE) --pack "$(PYOCD_PACK)" --chip --config "$(TOP)/pyocd.yaml"
 	$(PYOCD_EXE) load $< -t $(PYOCD_DEVICE) --pack "$(PYOCD_PACK)" --config "$(TOP)/pyocd.yaml"
+else ifeq ($(FLASH_PROGRM),openocd)
+	$(OPENOCD_CMD) -c "program $(BDIR)/$(PROJECT).hex $(OPENOCD_PROGRAM_ARGS)"
 else
 	@echo FLASH_PROGRM is invalid
 endif

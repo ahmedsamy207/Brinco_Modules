@@ -103,6 +103,16 @@ if (Test-Path -LiteralPath $packPath) {
     $script:problems++
 }
 
+# Bundled OpenOCD - the ST-Link V2 fallback / OpenOCD debug path
+$openocdExe = Join-Path $projectRoot 'Tools\openocd-puya\bin\openocd.exe'
+if (Test-Path -LiteralPath $openocdExe) {
+    $ocdVersion = & $openocdExe --version 2>&1 | Select-Object -First 1
+    Write-Host ("[OK]      OpenOCD (bundled, for ST-Link): {0}" -f $ocdVersion) -ForegroundColor Green
+} else {
+    Write-Host ("[MISSING] OpenOCD: {0}" -f $openocdExe) -ForegroundColor Red
+    $script:problems++
+}
+
 # pyOCD target visibility (pyocd.yaml is read from the project root)
 if ($pyocdCmd) {
     Push-Location $projectRoot
@@ -118,7 +128,18 @@ if ($pyocdCmd) {
 
         Write-Host ""
         Write-Host "--- Connected debug probes ---"
-        & $pyocdCmd @pyocdArgs list 2>&1 | Out-Host
+        $probeText = (& $pyocdCmd @pyocdArgs list 2>&1 | Out-String)
+        $probeText.TrimEnd() | Write-Host
+
+        if ($probeText -match 'STLink|ST-Link') {
+            Write-Host ""
+            Write-Host "ST-Link detected. If pyOCD cannot connect to the PY32 target:" -ForegroundColor Cyan
+            Write-Host "    make flash-openocd          (OpenOCD + ST-Link, see SETUP_WINDOWS.md section 5)"
+            Write-Host "    make debug with 'Debug (OpenOCD, ST-Link)' in VS Code"
+            Write-Host "Genuine ST firmware may refuse non-ST parts; clones are usually fine." -ForegroundColor DarkGray
+        } elseif ($probeText -match 'No connected|^\s*$') {
+            Write-Host "No probe found. For an ST-Link V2 install STSW-LINK009 and use a short USB cable." -ForegroundColor Yellow
+        }
     }
     finally {
         Pop-Location
