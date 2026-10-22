@@ -1,3 +1,12 @@
+/**
+ * @file ultrasonic.c
+ * @brief Trigger scheduling and interrupt-driven echo measurement.
+ *
+ * PB6 drives TRIG. The same ECHO net reaches PA3/TIM1_CH1 (rising edge)
+ * and PA1/TIM1_CH4 (falling edge), both AF13. TIM1 runs continuously at
+ * 1 MHz; the foreground schedules pulses and converts completed captures.
+ * No UART calls or distance calculations run in the capture interrupt.
+ */
 #include "ultrasonic.h"
 
 #define MEASUREMENT_INTERVAL_MS 60U
@@ -6,10 +15,14 @@
 #define TRIGGER_US              10U
 #define CAPTURE_FLAGS (TIM_FLAG_CC1 | TIM_FLAG_CC4 | TIM_FLAG_CC1OF | TIM_FLAG_CC4OF)
 
+/* Normal sequence: IDLE -> RISING -> FALLING -> DONE -> IDLE.
+ * Foreground timeout or an INVALID capture also returns to IDLE. */
 typedef enum { CAPTURE_IDLE, CAPTURE_RISING, CAPTURE_FALLING,
                CAPTURE_DONE, CAPTURE_INVALID } CaptureState;
 
 static TIM_HandleTypeDef timer;
+/* Shared with TIM1_CC_IRQHandler: snapshot these with interrupts masked.
+ * volatile provides visibility; it does not make the group atomic. */
 static volatile CaptureState capture_state;
 static volatile uint16_t rising_us;
 static volatile uint16_t pulse_us;
@@ -17,6 +30,10 @@ static uint32_t started_ms;
 static uint32_t last_trigger_ms;
 static UltrasonicReading reading;
 
+/** @brief Configure trigger GPIO and both capture channels after clock setup.
+ *  @note Requires an undivided APB clock; a divided APB may double timer clocks.
+ *        Initialization failures enter APP_ErrorHandler().
+ */
 void Ultrasonic_Init(void)
 {
   TIM_IC_InitTypeDef input = {0};
@@ -35,6 +52,7 @@ void Ultrasonic_Init(void)
   gpio.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &gpio);
 
+  /* Two separate capture inputs observe the same physical echo pulse. */
   gpio.Pin = GPIO_PIN_1 | GPIO_PIN_3;
   gpio.Mode = GPIO_MODE_AF_PP;
   gpio.Pull = GPIO_PULLDOWN;
@@ -72,8 +90,13 @@ void Ultrasonic_Init(void)
   last_trigger_ms = HAL_GetTick();
 }
 
+/** @brief Consume captured edges in TIM1_CC interrupt context.
+ *  @note A second rising edge or overwritten capture invalidates this sample.
+ *        Falling edges before a rising edge are ignored until the deadline.
+ */
 void Ultrasonic_TimerIRQ(void)
 {
+  /* Snapshot status and captured values before acknowledging pending flags. */
   uint32_t flags = TIM1->SR;
   uint16_t rise = (uint16_t)TIM1->CCR1;
   uint16_t fall = (uint16_t)TIM1->CCR4;
@@ -103,6 +126,10 @@ void Ultrasonic_TimerIRQ(void)
   }
 }
 
+/** @brief Foreground service: publish results, expire echoes, and schedule TRIG.
+ *  @note Call frequently; UART processing and this function share the main loop.
+ *        Unsigned tick differences remain correct across HAL tick rollover.
+ */
 void Ultrasonic_Process(void)
 {
   uint32_t now = HAL_GetTick();
@@ -110,6 +137,8 @@ void Ultrasonic_Process(void)
   CaptureState state;
   uint16_t duration;
 
+  /* Keep state and pulse width consistent if an edge arrives during service.
+   * Restore the caller's interrupt mask instead of unconditionally enabling. */
   __disable_irq();
   state = capture_state;
   duration = pulse_us;
@@ -139,6 +168,8 @@ void Ultrasonic_Process(void)
       reading.updated_ms = now;
       return;
     }
+    /* Arm capture before TRIG. Mask interrupts for the short pulse so a UART
+     * interrupt cannot stretch it; hardware capture remains active meanwhile. */
     mask = __get_PRIMASK();
     __disable_irq();
     __HAL_TIM_CLEAR_FLAG(&timer, CAPTURE_FLAGS);
@@ -154,6 +185,10 @@ void Ultrasonic_Process(void)
   }
 }
 
+/** @brief Return the latest completed result; foreground callers only.
+ *  @return Status, rounded millimetres, pulse width, and completion timestamp.
+ *          A non-OK status means distance_mm must not be treated as a distance.
+ */
 UltrasonicReading Ultrasonic_GetReading(void)
 {
   return reading;

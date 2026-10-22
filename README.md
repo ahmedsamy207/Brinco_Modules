@@ -10,7 +10,21 @@ write a Makefile or install a device pack.
 
 ---
 
+## Firmware code documentation
+
+All new module application code should include file-level purpose and hardware
+mapping, function comments describing inputs/outputs, units, errors and calling
+context, and field/constant comments for protocol and configuration values.
+Explain timing assumptions, ISR/foreground data sharing, calibration, state
+transitions and recovery where they affect behavior. Keep comments accurate
+when changing code; explain design decisions rather than repeating statements.
+Apply this convention to each new module copied from the MCU templates.
+
 ## Projects
+
+[`py32f003_IR_Array_Module`](py32f003_IR_Array_Module/README.md) supports the
+5-sensor IR array and the cut 3-sensor variant. Its UART `READ` command returns
+one byte containing the sensor states, sensor-count flag, and validity flag.
 
 The current ultrasonic UART firmware is in
 [`py32f003_Ultrasonic_Module`](py32f003_Ultrasonic_Module/README.md).
@@ -20,6 +34,7 @@ template and name the folder `py32f0xx_<ModuleName>_Module`.
 
 | Project | MCU | Core | Flash / RAM | Purpose |
 |---------|-----|------|-------------|---------|
+| `py32f003_IR_Array_Module` | **PY32F003F18P6TU** | Cortex-M0+ @ 24 MHz | 64 KB / 8 KB | 5/3-sensor line-following IR array, USART1 at 115200 baud |
 | `py32f003_Ultrasonic_Module` | **PY32F003F18P6TU** | Cortex-M0+ @ 24 MHz | 64 KB / 8 KB | current ultrasonic UART module, USART2 at 115200 baud |
 | `Py32f003_Ultrasonic` | **PY32F003F18P6TU** | Cortex-M0+ @ 24 MHz | 64 KB / 8 KB | ultrasonic distance sensor, I2C slave at `0x08` |
 | `Py32f003_ProjectTemplate` | **PY32F003F18P6TU** | Cortex-M0+ @ 24 MHz | 64 KB / 8 KB | **template** for new PY32F003 modules |

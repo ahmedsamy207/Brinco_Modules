@@ -2,13 +2,13 @@
   ******************************************************************************
   * @file    main.c
   * @author  Brinco
-  * @brief   Main program body - PY32F003 project template.
+  * @brief   Ultrasonic module application.
   ******************************************************************************
   * @attention
   *
-  * This file is the starting point for a new PY32F003 module. Everything else
-  * (startup file, HAL, linker script, debug configuration) is selected by
-  * MCU_TYPE in the Makefile.
+  * Entry point for the ultrasonic module. Sensor acquisition and UART command
+  * handling share a cooperative foreground loop; interrupt handlers only
+  * capture timing or receive bytes. Do not add long delays to this loop.
   *
   ******************************************************************************
   */
@@ -34,16 +34,14 @@ int main(void)
 
   /* Configure the system clock */
   SystemClock_Config();
+  /* Initialize acquisition before accepting host commands. */
   Ultrasonic_Init();
   ModuleUART_Init();
 
-  /* Initialise your peripherals here:
-   *   MX_GPIO_Init();
-   *   MX_USART1_UART_Init();
-   */
 
   while (1)
   {
+    /* Refresh sensor state before replying to the next queued command. */
     Ultrasonic_Process();
     ModuleUART_Process();
   }
@@ -51,7 +49,7 @@ int main(void)
 
 /**
   * @brief System Clock Configuration
-  * @note  PY32F003 has no PLL: the maximum system clock is the 24 MHz HSI.
+  * @note  This application uses the internal 24 MHz HSI.
   *       Change HSICalibrationValue to 4/8/16/22.12 MHz if you need less.
   * @retval None
   */
@@ -91,7 +89,7 @@ void SystemClock_Config(void)
   */
 void APP_ErrorHandler(void)
 {
-  /* infinite loop */
+  /* Fatal initialization/configuration error: halt for debugger inspection. */
   while (1)
   {
   }

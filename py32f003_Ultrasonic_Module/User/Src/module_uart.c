@@ -1,3 +1,12 @@
+/**
+ * @file module_uart.c
+ * @brief USART2 command transport for the ultrasonic module.
+ *
+ * Hardware: PA4 TX / PA5 RX, AF9; schematic TX/RX labels name the main board side.
+ * Link: 115200 baud, 8N1. Interrupt callbacks only enqueue incoming bytes;
+ * the foreground parses LF/CRLF commands and transmits bounded responses.
+ * The host must consume one response before sending the next command.
+ */
 #include "module_uart.h"
 #include "ultrasonic.h"
 #include <string.h>
@@ -9,16 +18,24 @@
 
 static UART_HandleTypeDef uart;
 static uint8_t rx_byte;
+/* Single producer (UART ISR), single consumer (foreground). One slot stays
+ * empty to distinguish full from empty: usable capacity is 127 bytes. */
 static uint8_t rx_queue[RX_CAPACITY];
 static volatile uint16_t rx_head;
 static volatile uint16_t rx_tail;
 static volatile uint8_t rx_lost;
 static volatile uint8_t rx_restart;
+/* Parser state belongs to the foreground. discard_line prevents a damaged
+ * command suffix from becoming a new command before the next LF delimiter. */
 static char line[LINE_CAPACITY];
 static uint8_t line_size;
 static uint8_t discard_line;
 static uint32_t last_byte_ms;
 
+/** @brief Append unsigned decimal digits without heap or printf support.
+ *  @return Pointer immediately after the digits; does not append a terminator.
+ *  @note Caller reserves up to 10 characters for a uint32_t value.
+ */
 static char *AppendDecimal(char *destination, uint32_t value)
 {
   char digits[10];
@@ -31,6 +48,10 @@ static char *AppendDecimal(char *destination, uint32_t value)
   return destination;
 }
 
+/** @brief Transmit a NUL-terminated diagnostic/text response in the foreground.
+ *  @note The terminator is not sent. A failed transmission is not retried;
+ *        the host detects a missing/truncated reply through its timeout.
+ */
 static void Reply(const char *message)
 {
   /* RX remains interrupt-driven during this bounded foreground transmission.
@@ -38,6 +59,10 @@ static void Reply(const char *message)
   (void)HAL_UART_Transmit(&uart, (uint8_t *)message, (uint16_t)strlen(message), 20U);
 }
 
+/** @brief Dispatch one complete, validated line in foreground context.
+ *  @note Reads cached sensor results; commands do not start a new acquisition.
+ *        response is sized for the longest supported diagnostic reply.
+ */
 static void ExecuteCommand(void)
 {
   char response[48];
@@ -75,6 +100,9 @@ static void ExecuteCommand(void)
   }
 }
 
+/** @brief Configure board-specific UART pins and arm one-byte interrupt RX.
+ *  @note Call after HAL/clock setup. Initialization failure is fatal.
+ */
 void ModuleUART_Init(void)
 {
   GPIO_InitTypeDef gpio = {0};
@@ -101,11 +129,16 @@ void ModuleUART_Init(void)
   if (HAL_UART_Receive_IT(&uart, &rx_byte, 1U) != HAL_OK) APP_ErrorHandler();
 }
 
+/** @brief Forward the MCU vector to the HAL; called only in IRQ context. */
 void ModuleUART_IRQHandler(void)
 {
   HAL_UART_IRQHandler(&uart);
 }
 
+/** @brief ISR producer: enqueue a byte and immediately re-arm reception.
+ *  @note On overflow, retain a loss flag rather than overwriting unread data.
+ *        No parsing or blocking transmission is allowed in this callback.
+ */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *handle)
 {
   uint16_t next;
@@ -115,12 +148,16 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *handle)
     rx_lost = 1U;
   } else {
     rx_queue[rx_head] = rx_byte;
+    /* Publish data before making the new queue head visible to the consumer. */
     __DMB();
     rx_head = next;
   }
   if (HAL_UART_Receive_IT(&uart, &rx_byte, 1U) != HAL_OK) rx_restart = 1U;
 }
 
+/** @brief ISR error notification; defer abort/re-arm and parser reset.
+ *  @note Even a recoverable UART error invalidates the partial command.
+ */
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *handle)
 {
   if (handle != &uart) return;
@@ -128,6 +165,10 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *handle)
   rx_restart = 1U;
 }
 
+/** @brief Foreground consumer: recover RX errors and process at most one line.
+ *  @note Call frequently alongside the sensor service. Limiting dispatch to
+ *        one line per call prevents a command burst from starving sampling.
+ */
 void ModuleUART_Process(void)
 {
   uint32_t now = HAL_GetTick();
@@ -137,6 +178,8 @@ void ModuleUART_Process(void)
     /* A line with lost/corrupted bytes must never become a valid command. */
     rx_tail = rx_head;
     rx_lost = 0U;
+    /* IRQs are masked while resetting shared queue/HAL RX state; preserve
+     * the caller's original interrupt mask on exit from this short section. */
     if (rx_restart) {
       (void)HAL_UART_AbortReceive(&uart);
       __HAL_UART_CLEAR_OREFLAG(&uart);
@@ -156,6 +199,8 @@ void ModuleUART_Process(void)
     uint8_t byte = rx_queue[rx_tail];
     rx_tail = (rx_tail + 1U) % RX_CAPACITY;
     last_byte_ms = now;
+    /* LF ends a normal line or ends discard mode. CR is ignored below so
+     * both LF and CRLF hosts use the same parser. Blank lines do nothing. */
     if (byte == '\n') {
       if (discard_line) {
         discard_line = 0U;

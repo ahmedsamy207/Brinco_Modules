@@ -20,11 +20,13 @@
 #include "ultrasonic.h"
 #include "module_uart.h"
 
+/** @brief USART2 vector: HAL RX handling only; parsing stays in main(). */
 void USART2_IRQHandler(void)
 {
   ModuleUART_IRQHandler();
 }
 
+/** @brief TIM1 capture vector: latch echo edge timestamps without blocking. */
 void TIM1_CC_IRQHandler(void)
 {
   Ultrasonic_TimerIRQ();
