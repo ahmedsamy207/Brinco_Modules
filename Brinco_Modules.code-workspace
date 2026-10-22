@@ -6,6 +6,10 @@
     // file when you want every module, plus the repository docs, in one window.
     "folders": [
         {
+            "name": "PY32F003 - Ultrasonic Module (UART)",
+            "path": "py32f003_Ultrasonic_Module"
+        },
+        {
             "name": "Brinco Modules (repo)",
             "path": "."
         },

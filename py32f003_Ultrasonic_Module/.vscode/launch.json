@@ -1,0 +1,77 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug (pyOCD)",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "pyocd",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/Build/${workspaceFolderBasename}.elf",
+            "targetId": "py32f003x8",
+            "cmsisPack": "${workspaceFolder}/Tools/packs/Puya.PY32F0xx_DFP.1.2.0.pack",
+            "svdFile": "${workspaceFolder}/Misc/SVD/py32f003xx.svd",
+            "serverArgs": [
+                "--config",
+                "${workspaceFolder}/pyocd.yaml"
+            ],
+            "runToEntryPoint": "main",
+            "preLaunchTask": "Build",
+            "showDevDebugOutput": "raw"
+        },
+        {
+            "name": "Attach (pyOCD)",
+            "type": "cortex-debug",
+            "request": "attach",
+            "servertype": "pyocd",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/Build/${workspaceFolderBasename}.elf",
+            "targetId": "py32f003x8",
+            "cmsisPack": "${workspaceFolder}/Tools/packs/Puya.PY32F0xx_DFP.1.2.0.pack",
+            "svdFile": "${workspaceFolder}/Misc/SVD/py32f003xx.svd",
+            "serverArgs": [
+                "--config",
+                "${workspaceFolder}/pyocd.yaml"
+            ],
+            "showDevDebugOutput": "raw"
+        },
+        {
+            "name": "Debug (OpenOCD, ST-Link)",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "openocd",
+            "cwd": "${workspaceFolder}",
+            "serverpath": "${workspaceFolder}/Tools/openocd-puya/bin/openocd.exe",
+            "configFiles": [
+                "${workspaceFolder}/Tools/openocd-puya/stlink-py32f003.cfg"
+            ],
+            "searchDir": [
+                "${workspaceFolder}/Tools/openocd-puya/script",
+                "${workspaceFolder}/Tools/openocd-puya"
+            ],
+            "executable": "${workspaceFolder}/Build/${workspaceFolderBasename}.elf",
+            "svdFile": "${workspaceFolder}/Misc/SVD/py32f003xx.svd",
+            "runToEntryPoint": "main",
+            "preLaunchTask": "Build",
+            "showDevDebugOutput": "raw"
+        },
+        {
+            "name": "Attach (OpenOCD, ST-Link)",
+            "type": "cortex-debug",
+            "request": "attach",
+            "servertype": "openocd",
+            "cwd": "${workspaceFolder}",
+            "serverpath": "${workspaceFolder}/Tools/openocd-puya/bin/openocd.exe",
+            "configFiles": [
+                "${workspaceFolder}/Tools/openocd-puya/stlink-py32f003.cfg"
+            ],
+            "searchDir": [
+                "${workspaceFolder}/Tools/openocd-puya/script",
+                "${workspaceFolder}/Tools/openocd-puya"
+            ],
+            "executable": "${workspaceFolder}/Build/${workspaceFolderBasename}.elf",
+            "svdFile": "${workspaceFolder}/Misc/SVD/py32f003xx.svd",
+            "showDevDebugOutput": "raw"
+        }
+    ]
+}

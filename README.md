@@ -12,8 +12,15 @@ write a Makefile or install a device pack.
 
 ## Projects
 
+The current ultrasonic UART firmware is in
+[`py32f003_Ultrasonic_Module`](py32f003_Ultrasonic_Module/README.md).
+`Py32f003_Ultrasonic` is the legacy I2C version. Current module hardware uses
+UART except the I2S expansion module. For a new module, copy the matching MCU
+template and name the folder `py32f0xx_<ModuleName>_Module`.
+
 | Project | MCU | Core | Flash / RAM | Purpose |
 |---------|-----|------|-------------|---------|
+| `py32f003_Ultrasonic_Module` | **PY32F003F18P6TU** | Cortex-M0+ @ 24 MHz | 64 KB / 8 KB | current ultrasonic UART module, USART2 at 115200 baud |
 | `Py32f003_Ultrasonic` | **PY32F003F18P6TU** | Cortex-M0+ @ 24 MHz | 64 KB / 8 KB | ultrasonic distance sensor, I2C slave at `0x08` |
 | `Py32f003_ProjectTemplate` | **PY32F003F18P6TU** | Cortex-M0+ @ 24 MHz | 64 KB / 8 KB | **template** for new PY32F003 modules |
 | `Py32f040_ProjectTemplate` | **PY32F040C1BT6** | Cortex-M0+ @ 72 MHz | 128 KB / 16 KB | **template** for new PY32F040 modules |

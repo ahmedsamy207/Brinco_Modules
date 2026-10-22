@@ -1,0 +1,10 @@
+# pyOCD configuration for PY32F003 modules created from this template.
+#
+# The Puya device family pack is committed inside the repo, so pyOCD can
+# resolve the PY32F003 targets without downloading anything.
+# Paths are relative to the folder pyOCD is started from (the project root).
+pack:
+  - Tools/packs/Puya.PY32F0xx_DFP.1.2.0.pack
+
+# SWD clock in Hz. Lower this to 100000 if you have long jumper wires.
+frequency: 1000000
