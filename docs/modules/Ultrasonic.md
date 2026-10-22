@@ -9,8 +9,8 @@ The old I2C project is historical and is not the current module protocol.
 
 ## Confirmed hardware
 
-PY32F003F18P6TU, 5 V, 32 MHz external crystal shown. Current firmware uses
-24 MHz internal HSI instead. PB6/package pin 13 drives TRIG. ECHO connects
+PY32F003F18P6TU, 5 V, fitted 32 MHz external crystal used as SYSCLK.
+PB6/package pin 13 drives TRIG. ECHO connects
 to both PA3/pin 2 and PA1/pin 20 for rising/falling TIM1 capture. Module TX
 is PA4/pin 3; RX is PA5/pin 4, USART2 AF9.
 
@@ -36,7 +36,7 @@ temperature compensation or a system-wide protocol revision.
 
 ## Validation
 
-Build passed (7104 bytes flash, 1928 bytes RAM at last check). Hardware pending:
+32 MHz HSE build passed (7212 bytes flash, 1928 bytes RAM at last check). Hardware pending:
 scope trigger/echo and UART, compare known distances, test absent/stuck echo,
 check rollover and verify module connector orientation. Precision in millimetres
 does not establish physical measurement accuracy.

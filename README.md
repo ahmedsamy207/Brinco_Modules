@@ -16,6 +16,13 @@ write a Makefile or install a device pack.
 
 ## Firmware code documentation
 
+**Clock policy:** always use the fitted external crystal. PY32F003F18P6TU
+runs directly from 32 MHz HSE; PY32F040C1BT6 uses 24 MHz HSE with PLL x3
+for 72 MHz. Keep HSE_VALUE consistent in HAL and CMSIS, configure flash wait
+states, and recalculate peripheral clocks. Crystal startup failure is an error,
+not a reason to silently fall back to HSI. The legacy I2C ultrasonic project
+is retained unchanged as historical firmware.
+
 All new module application code should include file-level purpose and hardware
 mapping, function comments describing inputs/outputs, units, errors and calling
 context, and field/constant comments for protocol and configuration values.
@@ -38,10 +45,10 @@ template and name the folder `py32f0xx_<ModuleName>_Module`.
 
 | Project | MCU | Core | Flash / RAM | Purpose |
 |---------|-----|------|-------------|---------|
-| `py32f003_IR_Array_Module` | **PY32F003F18P6TU** | Cortex-M0+ @ 24 MHz | 64 KB / 8 KB | 5/3-sensor line-following IR array, USART1 at 115200 baud |
-| `py32f003_Ultrasonic_Module` | **PY32F003F18P6TU** | Cortex-M0+ @ 24 MHz | 64 KB / 8 KB | current ultrasonic UART module, USART2 at 115200 baud |
+| `py32f003_IR_Array_Module` | **PY32F003F18P6TU** | Cortex-M0+ @ 32 MHz | 64 KB / 8 KB | 5/3-sensor line-following IR array, USART1 at 115200 baud |
+| `py32f003_Ultrasonic_Module` | **PY32F003F18P6TU** | Cortex-M0+ @ 32 MHz | 64 KB / 8 KB | current ultrasonic UART module, USART2 at 115200 baud |
 | `Py32f003_Ultrasonic` | **PY32F003F18P6TU** | Cortex-M0+ @ 24 MHz | 64 KB / 8 KB | ultrasonic distance sensor, I2C slave at `0x08` |
-| `Py32f003_ProjectTemplate` | **PY32F003F18P6TU** | Cortex-M0+ @ 24 MHz | 64 KB / 8 KB | **template** for new PY32F003 modules |
+| `Py32f003_ProjectTemplate` | **PY32F003F18P6TU** | Cortex-M0+ @ 32 MHz | 64 KB / 8 KB | **template** for new PY32F003 modules |
 | `Py32f040_ProjectTemplate` | **PY32F040C1BT6** | Cortex-M0+ @ 72 MHz | 128 KB / 16 KB | **template** for new PY32F040 modules |
 
 ### Which template should I copy?
@@ -368,7 +375,7 @@ Makefile edit is needed), add the `HAL_xxx_MspInit()` code in
 `py32f0xx_hal_msp.c`, then use the HAL from `main.c`.
 
 The templates start you off with `HAL_Init()`, a working `SystemClock_Config()`
-(24 MHz HSI on PY32F003, 72 MHz via PLL on PY32F040) and an empty main loop.
+(32 MHz HSE on PY32F003, 72 MHz via 24 MHz HSE and PLL x3 on PY32F040) and an empty main loop.
 
 `Py32f003_Ultrasonic` is a complete worked example of the same skeleton:
 TIM1 input capture, I2C1 slave at address `0x08` (command `0x35` returns the

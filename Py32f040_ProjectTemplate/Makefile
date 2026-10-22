@@ -114,6 +114,8 @@ INCLUDES := \
 ##### Library Flags #########################################################
 
 LIB_FLAGS := $(MCU_TYPE)
+# Apply the fitted crystal frequency to HAL and CMSIS system clock code.
+LIB_FLAGS += HSE_VALUE=24000000U
 
 
 ifeq ($(ENABLE_VECT_TAB_MIGRATION),n)

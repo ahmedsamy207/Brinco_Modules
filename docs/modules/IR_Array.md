@@ -10,7 +10,7 @@ Use all five sensors or cut off outer S1/S5 and retain S2/S3/S4.
 
 ## Confirmed hardware
 
-PY32F003F18P6TU at 5 V; 32 MHz crystal shown, firmware uses internal 24 MHz HSI.
+PY32F003F18P6TU at 5 V; firmware uses the fitted 32 MHz external crystal.
 Sensor outputs are analog collectors with 10 kohm pull-ups; no count strap is shown.
 
 | Physical sensor | GPIO | Package pin | ADC channel |
@@ -48,6 +48,6 @@ current scope. Keep the count build matched to the full/cut board.
 
 ## Validation
 
-Both builds passed: five mode 7344 bytes flash, three mode 7352; both 1920 bytes
+Both 32 MHz HSE builds passed: five mode 7452 bytes flash, three mode 7460; both 1920 bytes
 RAM at last check. Hardware pending: all patterns, cut-board continuity, ordering,
 black/white response, threshold chatter, freshness/error bytes and polling load.

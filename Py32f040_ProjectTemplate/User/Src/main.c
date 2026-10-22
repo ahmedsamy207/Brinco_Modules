@@ -25,35 +25,35 @@ int main(void)
 	* @brief System Clock Configuration
 	* @retval None
 	*/
+/** Clock policy: use the fitted crystal; halt if HSE/PLL startup fails.
+ *  HSI is only the reset/bootstrap source, never an application fallback.
+ *  Keep APB undivided so timer clocks equal the peripheral clock.
+ */
 void SystemClock_Config(void)
 {
-	RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-	RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_OscInitTypeDef oscillator = {0};
+  RCC_ClkInitTypeDef clocks = {0};
 
-	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-	RCC_OscInitStruct.HSIDiv = RCC_HSI_DIV1;
-	RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_24MHz;
-    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-    RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL3;      // 24MHz × 3 = 72MHz
-	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-	{
-		APP_ErrorHandler();
-	}
+  oscillator.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  oscillator.HSEState = RCC_HSE_ON;
+  oscillator.HSEFreq = RCC_HSE_16_32MHz;
+  /* The board's 24 MHz crystal feeds the PLL directly: 24 x 3 = 72 MHz. */
+  oscillator.PLL.PLLState = RCC_PLL_ON;
+  oscillator.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  oscillator.PLL.PLLMUL = RCC_PLL_MUL3;
+  if (HAL_RCC_OscConfig(&oscillator) != HAL_OK) APP_ErrorHandler();
 
-	/* Enable LPTIM clock if required */
-	__HAL_RCC_LPTIM_CLK_ENABLE();
-
-	/* Configure clocks: HSI as SYSCLK, AHB and APB1 with no division */
-	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1;
-	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
-	{
-		APP_ErrorHandler();
-	}
+  clocks.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1;
+  clocks.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  clocks.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  clocks.APB1CLKDivider = RCC_HCLK_DIV1;
+  /* Configure flash wait states before increasing the core clock. */
+  if (HAL_RCC_ClockConfig(&clocks, FLASH_LATENCY_2) != HAL_OK) {
+    APP_ErrorHandler();
+  }
+  /* HSE_VALUE must agree across HAL and CMSIS SystemCoreClockUpdate(). */
+  SystemCoreClockUpdate();
+  if (SystemCoreClock != 72000000U) APP_ErrorHandler();
 }
 
 /**

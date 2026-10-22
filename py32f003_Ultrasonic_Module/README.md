@@ -23,9 +23,10 @@ Source: `Modules Schematics/Schematic_Ultrasonic_UART.pdf`, revision 1.0.
 | SWDIO / SWCLK | PA13 / PA14 | 10 / 11 | Debug port |
 
 Both echo inputs are physically connected to the same sensor echo signal.
-The schematic uses a 5 V supply and a 32 MHz external crystal. This initial
-measurement implementation retains the template's 24 MHz internal HSI clock;
-TIM1's prescaler is calculated from the actual peripheral clock.
+The board uses a 5 V supply and its fitted 32 MHz external crystal as SYSCLK.
+TIM1's prescaler is calculated from the peripheral clock (32 / 1 MHz - 1 = 31),
+preserving the 1 us measurement tick. Flash uses one wait state. Crystal startup
+failure halts in APP_ErrorHandler(); there is no silent internal-clock fallback.
 
 ## Measurement behavior
 

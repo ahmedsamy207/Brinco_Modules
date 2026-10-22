@@ -118,6 +118,8 @@ INCLUDES	:= Libraries/CMSIS/Core/Include \
 
 # Library flags
 LIB_FLAGS		= $(MCU_TYPE)
+# Also applies to CMSIS system code, which does not include the HAL config.
+LIB_FLAGS       += HSE_VALUE=32000000U
 LIB_FLAGS       += IR_SENSOR_COUNT=$(IR_SENSOR_COUNT)
 
 ifneq ($(ENABLE_VECT_TAB_MIGRATION), y)

@@ -117,6 +117,8 @@ INCLUDES	:= Libraries/CMSIS/Core/Include \
 
 # Library flags
 LIB_FLAGS		= $(MCU_TYPE)
+# Also applies to CMSIS system code, which does not include the HAL config.
+LIB_FLAGS       += HSE_VALUE=32000000U
 
 ifneq ($(ENABLE_VECT_TAB_MIGRATION), y)
 	LIB_FLAGS	+= FORBID_VECT_TAB_MIGRATION

@@ -49,37 +49,34 @@ int main(void)
 
 /**
   * @brief System Clock Configuration
-  * @note  This application uses the internal 24 MHz HSI.
-  *       Change HSICalibrationValue to 4/8/16/22.12 MHz if you need less.
+  * @note  Runs from the fitted external crystal at the project clock target.
   * @retval None
   */
+/** Clock policy: use the fitted crystal; halt if HSE/PLL startup fails.
+ *  HSI is only the reset/bootstrap source, never an application fallback.
+ *  Keep APB undivided so timer clocks equal the peripheral clock.
+ */
 void SystemClock_Config(void)
 {
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_OscInitTypeDef oscillator = {0};
+  RCC_ClkInitTypeDef clocks = {0};
 
-  /* Configure the oscillator: enable HSI at 24 MHz with no division */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSIDiv = RCC_HSI_DIV1;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_24MHz;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
+  oscillator.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  oscillator.HSEState = RCC_HSE_ON;
+  oscillator.HSEFreq = RCC_HSE_16_32MHz;
+  if (HAL_RCC_OscConfig(&oscillator) != HAL_OK) APP_ErrorHandler();
+
+  clocks.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1;
+  clocks.SYSCLKSource = RCC_SYSCLKSOURCE_HSE;
+  clocks.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  clocks.APB1CLKDivider = RCC_HCLK_DIV1;
+  /* Configure flash wait states before increasing the core clock. */
+  if (HAL_RCC_ClockConfig(&clocks, FLASH_LATENCY_1) != HAL_OK) {
     APP_ErrorHandler();
   }
-
-  /* Enable LPTIM clock if required */
-  __HAL_RCC_LPTIM_CLK_ENABLE();
-
-  /* Configure clocks: HSI as SYSCLK, AHB and APB1 with no division */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
-  {
-    APP_ErrorHandler();
-  }
+  /* HSE_VALUE must agree across HAL and CMSIS SystemCoreClockUpdate(). */
+  SystemCoreClockUpdate();
+  if (SystemCoreClock != 32000000U) APP_ErrorHandler();
 }
 
 /**

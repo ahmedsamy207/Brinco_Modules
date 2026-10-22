@@ -24,6 +24,15 @@ protocols, schematics, or validation results change.
 
 ## Shared decisions
 
+- After completing and validating a coherent set of project changes, commit
+  and push it to the active GitHub development branch automatically, as
+  requested by the project owner. Report the commit and any push failure;
+  this does not authorize merging or rewriting remote history.
+
+- Always use the fitted external crystal: F003 at 32 MHz HSE directly;
+  F040 at 72 MHz from 24 MHz HSE and PLL x3. Keep HAL/CMSIS HSE_VALUE,
+  flash latency and peripheral dividers consistent. No silent HSI fallback.
+
 - Start each new MCU module by copying the matching PY32F003 or PY32F040
   template; name the resulting project `py32f0xx_<ModuleName>_Module`.
 - Preserve the legacy `Py32f003_Ultrasonic` as historical I2C firmware. The

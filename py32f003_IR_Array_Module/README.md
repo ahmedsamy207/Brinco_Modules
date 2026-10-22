@@ -22,8 +22,8 @@ Module TX is PA2/package pin 1, USART1_TX AF1 (schematic net `RX`). Module RX
 is PA3/package pin 2, USART1_RX AF1 (schematic net `TX`). The UART net labels
 describe the main board's perspective. SWDIO/SWCLK remain on PA13/PA14.
 
-The firmware retains the template's 24 MHz internal HSI clock. The board's
-32 MHz crystal is not used. ADC clock is PCLK/4 = 6 MHz, with 239.5-cycle
+The firmware uses the fitted 32 MHz external crystal directly as SYSCLK.
+ADC clock is PCLK/4 = 8 MHz, with 239.5-cycle
 sampling to allow settling through the pull-up networks.
 
 ## Three versus five sensors

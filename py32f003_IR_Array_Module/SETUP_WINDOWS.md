@@ -1,7 +1,7 @@
 # Windows + VS Code setup - PY32F003 project template
 
 This is the from-scratch setup for the **Py32f003_ProjectTemplate**
-(MCU: **PY32F003F18P6TU** - Cortex-M0+, 24 MHz, 64 KB flash, 8 KB SRAM,
+(MCU: **PY32F003F18P6TU** - Cortex-M0+, 32 MHz, 64 KB flash, 8 KB SRAM,
 TSSOP-20, 18 I/O).
 
 It is the same toolchain, build system and debug setup as
@@ -359,7 +359,7 @@ drop the `transport select` line).
 | `rules.mk` | `SHELL := cmd.exe` on Windows; `MKDIR`/`RMDIR` use `if not exist ... mkdir` / `rmdir /S /Q`, with `mkdir -p` / `rm -rf` on Unix |
 | `rules.mk` | output paths quoted; `-include $(OBJS:.o=.d)` so header changes trigger rebuilds |
 | `rules.mk` | `flash`, `erase`, `flash-openocd`, `erase-openocd`; `FLASH_PROGRM=jlink|pyocd|openocd` |
-| `User/Src/main.c` | minimal `HAL_Init()` + 24 MHz `SystemClock_Config()` + empty loop - replace with your application |
+| `User/Src/main.c` | minimal `HAL_Init()` + 32 MHz HSE `SystemClock_Config()` + empty loop - replace with your application |
 | `User/Inc/main.h` | board-level defines and `APP_ErrorHandler()` |
 | `User/Src/py32f0xx_hal_msp.c` | `HAL_MspInit()` plus a commented I2C/TIM MSP example |
 | `User/Src/py32f0xx_it.c` | Cortex-M0+ exception handlers + `SysTick_Handler()` -> `HAL_IncTick()` |
@@ -393,7 +393,7 @@ Run the **Check toolchain** task any time to see what is missing.
 | IntelliSense cannot open `py32f0xx.h` | Select the `PY32F003 (arm-none-eabi)` config in the C/C++ status bar item; make sure `arm-none-eabi-gcc` is on PATH. |
 | F5 uses the wrong ELF after renaming the folder | `PROJECT` follows the folder name; run `make clean` so the old `Build\<OldName>.elf` is removed. |
 | `region RAM overflowed` at link | 8 KB RAM is exhausted - check buffers, the stack and `printf` usage. |
-| Code runs at the wrong speed / `HAL_Delay` is off | `SystemClock_Config()` sets 24 MHz HSI. If you change `HSICalibrationValue`, keep the `FLASH_LATENCY_*` argument in step (latency 0 is correct only up to 24 MHz). |
+| Code runs at the wrong speed / `HAL_Delay` is off | Use 32 MHz HSE, HSE_VALUE=32000000U consistently in HAL/CMSIS, and FLASH_LATENCY_1. Verify crystal startup and SystemCoreClock. |
 
 ---
 
