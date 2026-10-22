@@ -1,5 +1,9 @@
 # Brinco Modules
 
+**Project handover and module status:** start with the
+[module development index](docs/modules/README.md). It links one reference
+page per board/module, including implemented behavior and unresolved decisions.
+
 Firmware for the Brinco hardware modules that plug into the custom main board
 (a Quarky-style carrier).
 
