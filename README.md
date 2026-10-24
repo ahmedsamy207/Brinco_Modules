@@ -45,6 +45,7 @@ template and name the folder `py32f0xx_<ModuleName>_Module`.
 
 | Project | MCU | Core | Flash / RAM | Purpose |
 |---------|-----|------|-------------|---------|
+| `py32f003_Touch_Sensor_Module` | **PY32F003F18P6TU** | Cortex-M0+ @ 32 MHz | 64 KB / 8 KB | XMXW 223 touch state, USART2 at 115200 baud |
 | `py32f003_IR_Array_Module` | **PY32F003F18P6TU** | Cortex-M0+ @ 32 MHz | 64 KB / 8 KB | 5/3-sensor line-following IR array, USART1 at 115200 baud |
 | `py32f003_Ultrasonic_Module` | **PY32F003F18P6TU** | Cortex-M0+ @ 32 MHz | 64 KB / 8 KB | current ultrasonic UART module, USART2 at 115200 baud |
 | `Py32f003_Ultrasonic` | **PY32F003F18P6TU** | Cortex-M0+ @ 24 MHz | 64 KB / 8 KB | ultrasonic distance sensor, I2C slave at `0x08` |
