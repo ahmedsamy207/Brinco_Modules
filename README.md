@@ -40,11 +40,13 @@ one byte containing the sensor states, sensor-count flag, and validity flag.
 The current ultrasonic UART firmware is in
 [`py32f003_Ultrasonic_Module`](py32f003_Ultrasonic_Module/README.md).
 `Py32f003_Ultrasonic` is the legacy I2C version. Current module hardware uses
-UART except the I2S expansion module. For a new module, copy the matching MCU
+UART for sensor modules; TFT and LED matrix use direct ESP32 SPI, and the
+I2S board uses ESP32 audio interfaces. For a new module, copy the matching MCU
 template and name the folder `py32f0xx_<ModuleName>_Module`.
 
 | Project | MCU | Core | Flash / RAM | Purpose |
 |---------|-----|------|-------------|---------|
+| `py32f040_LED_Matrix_Module` | **PY32F040C1BT6** | Cortex-M0+ @ 72 MHz | 128 KB / 16 KB | 48 RGB LEDs, direct ESP32 SPI, TIM15/DMA output |
 | `py32f003_Touch_Sensor_Module` | **PY32F003F18P6TU** | Cortex-M0+ @ 32 MHz | 64 KB / 8 KB | XMXW 223 touch state, USART2 at 115200 baud |
 | `py32f003_IR_Array_Module` | **PY32F003F18P6TU** | Cortex-M0+ @ 32 MHz | 64 KB / 8 KB | 5/3-sensor line-following IR array, USART1 at 115200 baud |
 | `py32f003_Ultrasonic_Module` | **PY32F003F18P6TU** | Cortex-M0+ @ 32 MHz | 64 KB / 8 KB | current ultrasonic UART module, USART2 at 115200 baud |

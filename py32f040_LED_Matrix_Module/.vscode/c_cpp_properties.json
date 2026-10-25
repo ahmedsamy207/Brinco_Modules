@@ -1,0 +1,36 @@
+{
+    "configurations": [
+        {
+            "name": "PY32F040 (arm-none-eabi)",
+            "compilerPath": "arm-none-eabi-gcc",
+            "compilerArgs": [
+                "-mcpu=cortex-m0plus",
+                "-mthumb"
+            ],
+            "intelliSenseMode": "gcc-arm",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "defines": [
+                "PY32F040xB",
+                "USE_HAL_DRIVER",
+                "FORBID_VECT_TAB_MIGRATION"
+            ],
+            "includePath": [
+                "${workspaceFolder}/Libraries/CMSIS/Core/Include",
+                "${workspaceFolder}/Libraries/CMSIS/Device/PY32F0xx/Include",
+                "${workspaceFolder}/Libraries/PY32F040_HAL_Driver/Inc",
+                "${workspaceFolder}/User/Inc"
+            ],
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/Libraries/CMSIS/Core/Include",
+                    "${workspaceFolder}/Libraries/CMSIS/Device/PY32F0xx/Include",
+                    "${workspaceFolder}/Libraries/PY32F040_HAL_Driver/Inc",
+                    "${workspaceFolder}/User/Inc"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
+        }
+    ],
+    "version": 4
+}
