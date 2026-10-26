@@ -14,7 +14,7 @@ protocols, schematics, or validation results change.
 | UART expansion board | Hardware reviewed; two-hub forwarding firmware not implemented | [Expansion Board](Expansion_Board.md) |
 | Ultrasonic | UART firmware implemented and built; hardware validation pending | [Ultrasonic](Ultrasonic.md) |
 | IR array | 3/5-sensor firmware implemented and both builds pass; calibration pending | [IR Array](IR_Array.md) |
-| Colour sensor | RGBW firmware builds; 15 software tests pass; I2C pull-ups/voltage compatibility require hardware correction or confirmation | [Colour Sensor](Color_Sensor.md) |
+| Colour sensor | RGBW firmware builds; 15 software tests pass; owner confirmed board rework required for missing I2C pull-ups and level shifting | [Colour Sensor](Color_Sensor.md) |
 | Sound sensor | Relative level/detection firmware builds; 13 software tests pass; hardware validation pending | [Sound Sensor](Sound_Sensor.md) |
 | Touch sensor | UART firmware builds; nine software tests pass; hardware validation pending | [Touch Sensor](Touch_Sensor.md) |
 | Stepper motor | Hardware reviewed; control requirements and firmware pending | [Stepper Motor](Stepper_Motor.md) |

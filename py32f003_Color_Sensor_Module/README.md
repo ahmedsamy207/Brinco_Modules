@@ -18,7 +18,10 @@ specified voltage limits; pulling it directly to 5 V is not a solution.
 Before physical operation, provide external I2C pull-ups and a compatible
 voltage arrangement, such as appropriately pulled-up, bidirectional level
 shifting. Any MCU supply change also needs review of UART and other connections.
-Confirm whether the manufactured PCB includes corrections absent from the PDF.
+The owner confirmed on 2026-10-26 that both pull-ups and level shifting were
+omitted and the board needs rework. Hardware validation must wait for that
+correction. Review the updated schematic/rework connections when available;
+no corrected board wiring has been verified yet.
 Firmware and simulated tests cannot resolve this electrical mismatch.
 
 | Function | GPIO / package pin | Configuration |

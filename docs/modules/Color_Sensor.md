@@ -28,11 +28,14 @@ LED_EN drives a BSS138 low-side illumination switch; gate has a pull-up to
 use AF12 open-drain without internal pulls. Source:
 [schematic](../../Modules%20Schematics/Schematic_Color_Sensor_UART.pdf).
 
-**Hardware issue requiring confirmation/correction:** no separate I2C pull-ups
+**Board rework required, confirmed by the owner on 2026-10-26:** I2C pull-ups
+and level shifting were omitted from the board. No separate I2C pull-ups
 or level shifter appear in that PDF. The 5 V MCU requires input HIGH >=0.7*VCC
 (3.5 V), while the sensor bus is limited to 3.6 V and normally pulled to 3.3 V.
 A direct connection is not guaranteed; firmware cannot repair this mismatch.
-Confirm PCB details or provide external pull-ups and compatible level shifting.
+Rework the board with external pull-ups and compatible level shifting before
+hardware validation. Review the revised schematic and actual rework connections
+when available; no corrected wiring or physical validation has been verified yet.
 Do not enable the MCU's 5 V internal pulls on the sensor/gate nets.
 Sources: [PY32 Table 5-19](../../PUYA%20datasheets/PY32F003_Datasheet_Rev1.7.pdf),
 [VEML6040 datasheet](../../Module%20Datasheets/VEML6040_Vishay_84276.pdf).
