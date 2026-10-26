@@ -14,7 +14,7 @@ protocols, schematics, or validation results change.
 | UART expansion board | Hardware reviewed; two-hub forwarding firmware not implemented | [Expansion Board](Expansion_Board.md) |
 | Ultrasonic | UART firmware implemented and built; hardware validation pending | [Ultrasonic](Ultrasonic.md) |
 | IR array | 3/5-sensor firmware implemented and both builds pass; calibration pending | [IR Array](IR_Array.md) |
-| Colour sensor | Hardware reviewed; firmware not implemented | [Colour Sensor](Color_Sensor.md) |
+| Colour sensor | RGBW firmware builds; 15 software tests pass; I2C pull-ups/voltage compatibility require hardware correction or confirmation | [Colour Sensor](Color_Sensor.md) |
 | Sound sensor | Relative level/detection firmware builds; 13 software tests pass; hardware validation pending | [Sound Sensor](Sound_Sensor.md) |
 | Touch sensor | UART firmware builds; nine software tests pass; hardware validation pending | [Touch Sensor](Touch_Sensor.md) |
 | Stepper motor | Hardware reviewed; control requirements and firmware pending | [Stepper Motor](Stepper_Motor.md) |
@@ -46,7 +46,7 @@ protocols, schematics, or validation results change.
 - Six-pin SPI IN/OUT numbering uses its own mapping; do not reuse the JST rule.
 - Main and expansion PY32 hubs forward between SPI and individual UART links.
   SPI routing, discovery, framing and timing are not implemented or agreed yet.
-- Existing ultrasonic/IR/touch/sound UART implementations use 115200 baud, 8N1. This is
+- Existing ultrasonic/IR/touch/sound/colour UART implementations use 115200 baud, 8N1. This is
   not an automatically approved protocol specification for unimplemented boards.
 - The owner confirmed that TFT and LED matrix communicate directly with the
   main board ESP32 through the TFT SPI header, bypassing the UART hubs.
