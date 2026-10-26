@@ -6,6 +6,10 @@
     // file when you want every module, plus the repository docs, in one window.
     "folders": [
         {
+            "name": "PY32F003 - Sound Sensor Module (UART)",
+            "path": "py32f003_Sound_Sensor_Module"
+        },
+        {
             "name": "PY32F040 - LED Matrix Module (SPI)",
             "path": "py32f040_LED_Matrix_Module"
         },

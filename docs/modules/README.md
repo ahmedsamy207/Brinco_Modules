@@ -1,6 +1,6 @@
 # Module development index
 
-Last reviewed: 2026-10-25. Start here when joining or resuming the project.
+Last reviewed: 2026-10-26. Start here when joining or resuming the project.
 
 These pages describe the agreed purpose, schematic wiring, implemented behavior,
 open decisions, and next steps for every board. Hardware is in manufacturing:
@@ -15,7 +15,7 @@ protocols, schematics, or validation results change.
 | Ultrasonic | UART firmware implemented and built; hardware validation pending | [Ultrasonic](Ultrasonic.md) |
 | IR array | 3/5-sensor firmware implemented and both builds pass; calibration pending | [IR Array](IR_Array.md) |
 | Colour sensor | Hardware reviewed; firmware not implemented | [Colour Sensor](Color_Sensor.md) |
-| Sound sensor | Hardware reviewed; firmware not implemented | [Sound Sensor](Sound_Sensor.md) |
+| Sound sensor | Relative level/detection firmware builds; 13 software tests pass; hardware validation pending | [Sound Sensor](Sound_Sensor.md) |
 | Touch sensor | UART firmware builds; nine software tests pass; hardware validation pending | [Touch Sensor](Touch_Sensor.md) |
 | Stepper motor | Hardware reviewed; control requirements and firmware pending | [Stepper Motor](Stepper_Motor.md) |
 | LED matrix | SPI/DMA firmware builds; 13 software tests pass; hardware validation pending | [LED Matrix](LED_Matrix.md) |
@@ -46,7 +46,7 @@ protocols, schematics, or validation results change.
 - Six-pin SPI IN/OUT numbering uses its own mapping; do not reuse the JST rule.
 - Main and expansion PY32 hubs forward between SPI and individual UART links.
   SPI routing, discovery, framing and timing are not implemented or agreed yet.
-- Existing ultrasonic/IR/touch UART implementations use 115200 baud, 8N1. This is
+- Existing ultrasonic/IR/touch/sound UART implementations use 115200 baud, 8N1. This is
   not an automatically approved protocol specification for unimplemented boards.
 - The owner confirmed that TFT and LED matrix communicate directly with the
   main board ESP32 through the TFT SPI header, bypassing the UART hubs.
