@@ -30,6 +30,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "spi_transport.h"
 #include "py32f040_it.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -99,3 +100,7 @@ void PVD_IRQHandler(void)
 }
 
 /************************ (C) COPYRIGHT Puya *****END OF FILE******************/
+
+/** @brief SPI byte service and end-of-CS boundary; no LCD/touch work in IRQs. */
+void SPI1_IRQHandler(void) { SPITransport_IRQHandler(); }
+void EXTI4_15_IRQHandler(void) { SPITransport_NSS_IRQHandler(); }

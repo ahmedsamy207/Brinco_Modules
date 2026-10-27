@@ -7,6 +7,7 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "py32f040_hal.h"
+void APP_ErrorHandler(void);
 
 #ifdef __cplusplus
 }

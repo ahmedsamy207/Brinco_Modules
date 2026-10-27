@@ -1,8 +1,9 @@
 /** @file tft_board.h
  *  @brief Pin map from Schematic_TFT_Module.pdf; no GPIO is driven here.
- *  The exact display/controller and its 5 V interface compatibility still
- *  need confirmation before enabling the parallel bus. Initial scope is
- *  display drawing only; the separate SD interface remains unconfigured.
+ *  Target LCDWIKI MAR2406 ILI9341 shield with onboard level conversion.
+ *  Touch XP=D0=PA0, YM=D1=PA1, XM=RS=PB0, YP=CS=PB8. Both ends of
+ *  each resistive layer are equivalent sense points when floating. PA0/PA1
+ *  ADC channels 0/1 avoid needing an ADC on PB8. SD remains excluded.
  */
 #ifndef BRINCO_TFT_BOARD_H
 #define BRINCO_TFT_BOARD_H

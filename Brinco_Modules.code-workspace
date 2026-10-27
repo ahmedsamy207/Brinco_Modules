@@ -6,7 +6,7 @@
     // file when you want every module, plus the repository docs, in one window.
     "folders": [
         {
-            "name": "PY32F040 - TFT Module (foundation)",
+            "name": "PY32F040 - TFT Display + Touch (SPI)",
             "path": "py32f040_TFT_Module"
         },
         {

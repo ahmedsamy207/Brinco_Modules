@@ -18,3 +18,10 @@ Register words and repeated-start read requirements are on pages 7–9.
 The LED PDF was downloaded unchanged on 2026-10-25. Its title includes
 WS2812B-S; the saved filename follows the LCSC 2812B-S listing. Use this exact
 part's timing table/notes and GRB order rather than another WS2812 variant.
+
+
+TFT manufacturer manual, ILI9341 datasheet, example archives and initialization
+source are linked with reviewed SHA-256 hashes in
+[the TFT reference notes](../py32f040_TFT_Module/ThirdParty/README.md). Those
+reference PDFs/archives are not redistributed here. The adapted initialization
+source retains the manufacturer's MIT license in that project.

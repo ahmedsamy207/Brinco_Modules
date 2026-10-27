@@ -1,11 +1,12 @@
-/** @file main.c
- *  @brief TFT project foundation: external-crystal clock only for now.
- *  The owner selected display drawing only (no SD support). Controller
- *  initialization and GPIO driving await the exact TFT module datasheet.
- *  A successful build of this foundation does not test or operate a display.
+/** @file main.c @brief ILI9341 display, resistive touch and SPI host services.
+ *  The fitted 24 MHz crystal feeds PLL x3. LCD jobs render bounded chunks;
+ *  touch borrows/restores shared pins between chunks. SD is excluded.
  */
 #include "main.h"
-#include "tft_board.h"
+#include "tft_render.h"
+#include "tft_touch.h"
+#include "tft_protocol.h"
+#include "spi_transport.h"
 
 void SystemClock_Config(void);
 void APP_ErrorHandler(void);
@@ -21,12 +22,16 @@ int main(void)
 {
 	HAL_Init();
 	SystemClock_Config();
+	TFTRender_Init();
+	TFTTouch_Init();
+	TFTProtocol_Init();
+	SPITransport_Init();
 
 	while (1)
 	{
-		/* No display or host peripheral is configured until the module's
-		 * controller, timing and voltage compatibility have been checked. */
-		HAL_Delay(1000);
+		TFTRender_Process();
+		TFTTouch_Process();
+		SPITransport_Process();
 	}
 }
 
