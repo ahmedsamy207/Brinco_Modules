@@ -39,7 +39,9 @@ void Downstream_Init(void)
 }
 uint8_t Downstream_Start(const uint8_t *p)
 {
-  if(state || (uint32_t)(HAL_GetTick()-ended)<5U) return 0;
+  /* Tick timestamps truncate to milliseconds: add one tick to guarantee
+   * at least5ms high even when CS changed just before the next SysTick. */
+  if(state || (uint32_t)(HAL_GetTick()-ended)<6U) return 0;
   __HAL_RCC_SPI2_FORCE_RESET();__HAL_RCC_SPI2_RELEASE_RESET();
   SPI2->CR1=cr1_config;SPI2->CR2=cr2_config;
   memcpy(tx,p,HUB_FRAME);finished=0;received=0;sent=0;since=HAL_GetTick();state=1;
@@ -48,7 +50,8 @@ uint8_t Downstream_Start(const uint8_t *p)
 void Downstream_Process(void)
 {
   uint32_t now=HAL_GetTick();
-  if(state==1 && (uint32_t)(now-since)>=1U) {
+  /* Two tick boundaries guarantee a full1ms physical CS setup interval. */
+  if(state==1 && (uint32_t)(now-since)>=2U) {
     state=2;
     SPI2->CR1 |= SPI_CR1_SPE;
     SPI2->CR2 |= SPI_CR2_RXNEIE|SPI_CR2_TXEIE|SPI_CR2_ERRIE;

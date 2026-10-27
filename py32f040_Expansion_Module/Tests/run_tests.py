@@ -218,6 +218,13 @@ class BridgeTests(unittest.TestCase):
   with self.assertRaises(HubError):h.command(WRITE,port=1,data=b'A')
   self.assertEqual(count[0],1)
 
+ def test_master_minimum_gaps_allow_for_millisecond_tick_quantization(self):
+  f=Firmware();self.cmd(f,INFO,hop=1)
+  f.call('Test_Time',5);f.call('Test_Step');self.assertEqual(f.call('Test_MasterSelected'),0)
+  f.call('Test_Time',6);f.call('Test_Step');self.assertEqual(f.call('Test_MasterSelected'),1)
+  f.call('Test_Time',7);f.call('Test_Step');self.assertEqual(f.call('Test_MasterReady'),0)
+  f.call('Test_Time',8);f.call('Test_Step');self.assertNotEqual(f.call('Test_MasterReady'),0)
+
 if __name__=='__main__':
  with tempfile.TemporaryDirectory() as tmp:
   IMAGE=build(Path(tmp));unittest.main()

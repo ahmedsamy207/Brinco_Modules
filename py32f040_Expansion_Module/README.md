@@ -175,8 +175,8 @@ Flash `Build/py32f040_Expansion_Module.hex` into **both** MCUs using the normal
 project SWD workflow (`make flash` for the connected target); power the board
 correctly and program each SWD connector separately. See SETUP_WINDOWS.md.
 
-**24 tests pass** in the current software baseline. The target build uses
-9640 bytes flash and4680 bytes static RAM; stack use is additional.
+**25 tests pass** in the current software baseline. The target build uses
+9644 bytes flash and 4680 bytes static RAM; stack use is additional.
 Physical hardware validation remains pending.
 
 The suite ARM-compiles the actual routing, UART rings, upstream SPI and downstream

@@ -60,6 +60,7 @@ void Test_Feed(uint32_t v)
 }
 void Test_UARTError(uint32_t i) { handles[i]->RxState=HAL_UART_STATE_READY;HAL_UART_ErrorCallback(handles[i]); }
 void Test_TxFail(uint32_t value) { tx_fail=value; }
+uint32_t Test_MasterSelected(void) { return !cs2; }
 uint32_t Test_MasterReady(void) { return !cs2 && (test_spi2.CR2&SPI_CR2_RXNEIE); }
 uint32_t Test_MasterFirst(void) { test_spi2.SR=SPI_SR_TXE;Downstream_IRQHandler();return test_spi2.DR&255U; }
 uint32_t Test_MasterByte(uint32_t v)
