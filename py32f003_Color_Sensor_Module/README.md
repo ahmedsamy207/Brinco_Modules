@@ -8,21 +8,18 @@ lux/CCT and surface calibration are not implemented in version 1.
 
 ## Hardware status: corrected schematic reviewed, physical validation pending
 
-The owner added [the corrected schematic](../Modules%20Schematics/Schematic_Color_Sensor_UART_New.pdf)
-in commit dd8a5c8; reviewed on 2026-10-27. It supersedes the
-[original schematic](../Modules%20Schematics/Schematic_Color_Sensor_UART.pdf),
-which omitted I2C pull-ups and level shifting. The PY32 remains at 5 V and the
-VEML6040 at 3.3 V. Q1/Q3 BSS138 now separate the two bus voltage domains,
-with gates at 3.3 V, sources on sensor nets and drains on MCU nets. R3/R4
-pull the sensor side to 3.3 V; R5/R6 pull the MCU side to 5 V.
+The [current schematic](../Modules%20Schematics/Schematic_Color_Sensor_UART.pdf)
+was updated locally by the owner and reviewed on 2026-10-27. It includes the
+BSS138 level shifters and all four I2C pull-ups at 4.7 kohm. The duplicate
+_New.pdf was removed; earlier schematics remain available in Git history.
+The PY32 stays at 5 V and the VEML6040 at 3.3 V. Q1/Q3 have gates at 3.3 V,
+sources on sensor nets and drains on MCU nets. R3/R4 pull the sensor side to
+3.3 V; R5/R6 pull the MCU side to 5 V. Q2 is the AO3400A LED switch.
 
-R3-R6 are drawn as 10 kohm. They may work at 100 kHz on a short low-capacitance
-bus, but require measured rise times <=1 us. Recommend 4.7 kohm for all four
-for more timing margin; this recommendation has not been applied to the PDF.
-Keep the LED gate pull-up R2 at 10 kohm. Using tr=0.8473*R*C, the first-order
-capacitance allowance is approximately 118 pF at 10 kohm or 251 pF at 4.7 kohm;
-measure the translated bus on both sides rather than relying on this estimate.
-[TI calculation reference](https://www.ti.com/lit/an/slva689/slva689.pdf).
+R3-R6 now use the recommended 4.7 kohm. The LED gate pull-up R2 remains
+10 kohm and the LED series resistor remains 68 ohm. Verify actual bus rise
+times <=1 us at 100 kHz on both sides; schematic values do not replace scope
+measurements. [TI calculation reference](https://www.ti.com/lit/an/slva689/slva689.pdf).
 
 The schematic now addresses the identified pull-up/voltage mismatch. Physical
 rework/new-board completion and PCB footprint/pin mapping remain unverified.
@@ -159,7 +156,7 @@ accuracy. No physical-board validation has occurred.
 
 ## Hardware bring-up
 
-Confirm the corrected physical wiring and recommended pull-up values. Scope MCU clock, both I2C bus
+Confirm the corrected physical wiring and fitted 4.7 kohm pull-ups. Scope MCU clock, both I2C bus
 voltage levels, rise times, ACKs and repeated START. Verify every word's byte
 order, force-mode conversion wait at each IT, LED_EN release/sink behavior,
 UART latency under disconnect/stuck-line conditions and recovery. Record dark,

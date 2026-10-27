@@ -1,7 +1,7 @@
 /** @file color_bus.c
  *  @brief VEML6040 word transfers, repeated-start reads and mixed-rail GPIOs.
  *  Requires external I2C pull-ups and a voltage-compatible bus arrangement.
- *  The corrected _New schematic supplies BSS138 translators and pull-ups on
+ *  The current schematic supplies BSS138 translators and 4.7 kohm pull-ups on
  *  both voltage domains; actual rework and rise times still need verification.
  */
 #include "main.h"
