@@ -7,6 +7,14 @@ display drawing **and touch**; SD remains excluded. The linked manufacturer
 manual documents onboard 5 V/3.3 V level conversion. Other similarly named
 shields, including the ST7789V variant linked on that page, are not interchangeable.
 
+The owner's intended purchase is [Ampere product 25678](https://ampere-electronics.com/product/2-4-inch-tft-lcd-shield-touch-display-module-for-arduino/).
+Its indexed listing names MAR2406/ILI9341 but does not establish the supplied
+board's touch wiring. The current firmware uses the LCDWIKI-specific CS/RS
+profile below. Some shields instead use WR/RS with D6/D7; that profile would
+map to PA6/PA7/PB0/PB1 and requires a firmware change, not an assumed match.
+WR=PB1/ADC9 and RS=PB0/ADC8 are already ADC-capable on this carrier. Confirm
+the actual module pin map before changing firmware or reworking the PCB.
+
 PY32F040C1BT6 uses fitted 24 MHz HSE, PLL x3 to 72 MHz, flash latency 2 and
 consistent HAL/CMSIS HSE_VALUE. Clock failure halts without HSI fallback.
 Default view is native 240x320 portrait; rotations 1/3 provide 320x240 landscape.

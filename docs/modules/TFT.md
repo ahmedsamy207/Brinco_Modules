@@ -17,6 +17,11 @@ ILI9341, 240x320 native pixels, an 8-bit parallel bus, onboard 5 V/3.3 V level
 conversion and resistive touch. The separately linked ST7789V variant is not
 supported by this build. Verify the delivered shield/controller variant.
 
+The intended purchase is [Ampere Electronics product 25678](https://ampere-electronics.com/product/2-4-inch-tft-lcd-shield-touch-display-module-for-arduino/).
+Its indexed specification identifies MAR2406/ILI9341, but does not document
+the actual supplied board's touch electrode connections. The runtime mapping
+below is the LCDWIKI reference profile, not a verified pinout of seller stock.
+
 | Signal/group | MCU GPIO |
 |---|---|
 | Host TFT_CS / TFT_SCK | PA15 / PB3 |
@@ -24,7 +29,7 @@ supported by this build. Verify the delivered shield/controller variant.
 | LCD_D0..LCD_D7 | PA0..PA7 respectively |
 | LCD_RS / LCD_WR / LCD_RD | PB0 / PB1 / PA11 |
 | LCD_CS / LCD_RST | PB8 / PB9 |
-| Touch XP / YM / XM / YP | PA0 / PA1 / PB0 / PB8, shared with D0/D1/RS/CS |
+| Touch XP / YM / XM / YP (current firmware profile) | PA0 / PA1 / PB0 / PB8, shared with D0/D1/RS/CS |
 | Unused SD_SS / SD_SCK / SD_MISO / SD_MOSI | PB12 / PB13 / PB14 / PB15 |
 
 Host header: 1 MISO, 2 MOSI, 3 SCK, 4 5 V, 5 CS, 6 GND. This is the dedicated
@@ -39,6 +44,15 @@ Touch temporarily borrows four pins, keeps WR/RD inactive, switches excitation
 through high-Z and restores LCD outputs even on ADC errors. SD CS is parked
 HIGH; SPI2 and SD operations are not implemented. See
 [implementation references/license](../../py32f040_TFT_Module/ThirdParty/README.md).
+
+Another common shield profile uses XP=D6, YM=D7, XM=RS, YP=WR. On this carrier
+that would be PA6, PA7, PB0 and PB1. PB0/RS and PB1/WR both have ADC inputs
+(8/9), so the conventional WR/RS sampling layout is compatible with the
+carrier. It would require a firmware touch-profile change; the current runtime
+does not auto-detect or implement that alternate pin mapping. Confirm seller
+stock through its actual schematic/test sketch or electrode-resistance tracing
+before selecting a profile or deciding on PCB rework. No rework requirement
+can be concluded from the product title/controller alone.
 
 ## Implemented behavior
 

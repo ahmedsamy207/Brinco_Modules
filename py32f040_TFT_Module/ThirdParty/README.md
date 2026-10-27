@@ -5,6 +5,7 @@ project owner. The page also links an ST7789V package; that controller is not
 supported by this build. Verify the supplied module variant.
 
 - [Product page](https://www.lcdwiki.com/2.4inch_Arduino_Display)
+- [Owner's intended supplier, Ampere product 25678](https://ampere-electronics.com/product/2-4-inch-tft-lcd-shield-touch-display-module-for-arduino/)
 - [MAR2406 manual](https://www.lcdwiki.com/res/MAR2406/2.4inch_Arduino_8BIT_Module_MAR2406_User_Manual_EN.pdf)
 - [ILI9341 datasheet](https://www.lcdwiki.com/res/MAR2406/ILI9341_Datasheet.pdf)
 - [Manufacturer examples](https://www.lcdwiki.com/res/Program/Arduino/2.4inch/UNO_8BIT_ILI9341_MAR2406_V1.1/2.4inch_Arduino_8BIT_Module_ILI9341_MAR2406_V1.1.zip)
@@ -19,7 +20,10 @@ YM=9, XM=A2, YP=A3, equivalent to LCD D0/D1/RS/CS. The TouchScreen library
 credits ladyada/Adafruit under MIT. Its four-wire excitation method was
 consulted; our implementation uses complementary sensing/pressure connections
 to avoid non-ADC PB8, with separate filtering/calibration. Generic examples
-use different pins and must not override the MAR2406-specific wiring.
+use different pins. A common alternate is XP=6, YM=7, XM=A2, YP=A1,
+equivalent to D6/D7/RS/WR. The supplier listing does not establish which
+electrode map its stock uses. Select wiring from the actual board evidence;
+the current implementation targets only the CS/RS reference profile.
 
 SHA-256 of reviewed downloads (not copies distributed by this project):
 

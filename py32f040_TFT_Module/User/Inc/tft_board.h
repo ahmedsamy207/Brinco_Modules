@@ -1,6 +1,8 @@
 /** @file tft_board.h
  *  @brief Pin map from Schematic_TFT_Module.pdf; no GPIO is driven here.
- *  Target LCDWIKI MAR2406 ILI9341 shield with onboard level conversion.
+ *  Target LCDWIKI MAR2406 ILI9341 reference profile; supplier stock's touch
+ *  wiring still needs confirmation. Alternate WR/RS shields need a profile
+ *  change; do not infer electrode mapping from the ILI9341 controller alone.
  *  Touch XP=D0=PA0, YM=D1=PA1, XM=RS=PB0, YP=CS=PB8. Both ends of
  *  each resistive layer are equivalent sense points when floating. PA0/PA1
  *  ADC channels 0/1 avoid needing an ADC on PB8. SD remains excluded.
