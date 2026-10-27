@@ -19,7 +19,7 @@ protocols, schematics, or validation results change.
 | Touch sensor | UART firmware builds; nine software tests pass; hardware validation pending | [Touch Sensor](Touch_Sensor.md) |
 | Stepper motor | Hardware reviewed; control requirements and firmware pending | [Stepper Motor](Stepper_Motor.md) |
 | LED matrix | SPI/DMA firmware builds; 13 software tests pass; hardware validation pending | [LED Matrix](LED_Matrix.md) |
-| TFT display | ESP32 TFT-header SPI interface confirmed; firmware pending | [TFT](TFT.md) |
+| TFT display | Clock-only template foundation prepared; display-only scope confirmed; exact TFT module link required for driver | [TFT](TFT.md) |
 | I2S/audio board | Purpose agreed; ESP audio drivers/features pending; no onboard MCU | [I2S Audio](I2S_Audio.md) |
 
 ## Shared decisions
