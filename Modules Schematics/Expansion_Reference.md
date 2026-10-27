@@ -97,18 +97,15 @@ The intended cable/connector assembly must preserve these signal identities.
 This six-pin correspondence differs from the four-pin JST module cable
 reversal; do not apply the four-pin rule to expansion headers.
 
-## Future firmware work
+## Firmware implementation and remaining work
 
-- Define SPI framing, upstream/downstream roles, response timing and recovery.
-- Include a hub/hop and local UART-port destination so identical modules
-  attached at different stages can be selected independently.
-- Keep module UART payloads separate from SPI routing envelopes; the existing
-  ultrasonic and IR module commands do not need to encode the hub chain.
-- Allow for each additional expansion board introducing two MCU forwarding hops.
-- Plan enumeration or fixed topology configuration; the schematic establishes
-  no discovery protocol, chain limit, or guaranteed SPI frequency.
-- Implement ESP audio drivers for the I2S/PDM board; no MCU firmware is loaded
-  into that board according to this schematic.
+[Expansion firmware](../py32f040_Expansion_Module/README.md) now implements the
+first SPI routing protocol: identical images for both MCUs, four115200 8N1
+UARTs per MCU, relative hops0..7,64-byte CRC frames, buffered binary payloads,
+receipt caching, error flags and finite forwarding deadlines. Its README is
+canonical for protocol/timing details; this schematic alone does not establish
+validated electrical timing, cable length or cascade performance.
 
-These notes describe connectivity and intended roles, not validated hardware
-timing, cable assemblies or an implemented SPI forwarding protocol.
+Main ESP32/main-board PY32 hub integration and physical validation remain
+pending. Each expansion still adds two active hops, while I2S pass-through adds
+none. ESP audio drivers remain separate; the I2S board has no MCU firmware.

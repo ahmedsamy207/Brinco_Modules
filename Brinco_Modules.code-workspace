@@ -6,6 +6,10 @@
     // file when you want every module, plus the repository docs, in one window.
     "folders": [
         {
+            "name": "PY32F040 - UART Expansion (SPI bridge)",
+            "path": "py32f040_Expansion_Module"
+        },
+        {
             "name": "PY32F040 - TFT Display + Touch (SPI)",
             "path": "py32f040_TFT_Module"
         },

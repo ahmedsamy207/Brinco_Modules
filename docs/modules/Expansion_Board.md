@@ -1,6 +1,6 @@
 # UART expansion board
 
-Last reviewed: 2026-10-22. [All modules](README.md)
+Last reviewed: 2026-10-27. [All modules](README.md)
 
 ## Purpose
 
@@ -22,18 +22,31 @@ Detailed pins, six-pin IN/OUT mapping and topology:
 
 ## Firmware and protocol status
 
-Not implemented. Copy the F040 template when implementation starts. Both MCU
-roles need upstream SPI reception, local UART service and downstream forwarding.
-This is an active chain of SPI segments, not passive parallel SPI wiring.
+Implemented in [py32f040_Expansion_Module](../../py32f040_Expansion_Module/README.md),
+created from the F040 template. Flash the same binary into PY1 and PY2. Each
+MCU runs from its 24 MHz crystal with PLL x3 at72 MHz and provides four
+115200 8N1 UART ports plus SPI1 upstream slave/SPI2 downstream master.
 
-## Open decisions and next work
+The first bridge protocol uses64-byte CRC-protected envelopes, relative hop0..7
+and logical USART port1..4. UART payloads are transparent, including the IR binary
+byte. Host sends one request and polls FETCH for its cached reply. Strictly
+increasing32-bit IDs prevent duplicate UART writes/consuming reads during the
+powered session; timeouts never cause automatic command retransmission.
 
-Define hub/hop and port addressing, boot-time discovery or fixed configuration,
-buffering, response latency, SPI mode/rate, disconnect handling and chain limits.
-Decide whether one configurable firmware image can serve both expansion MCUs.
-No routing packet format or enumeration algorithm has been approved yet.
+Each port has256-byte RX/TX rings and sticky error/overflow flags. WRITE, READ,
+STATUS, CLEAR and INFO provide queue access and explicit reachability probing.
+The [project README](../../py32f040_Expansion_Module/README.md) specifies timings,
+connector-to-port mapping, error semantics, host helper, limits and reset behavior.
+
+Main ESP32/main-board PY32 hub application integration remains pending. I2S
+pass-through adds no active hop. Continuous lossless full-rate traffic from all
+UARTs is not guaranteed; physical clock/cable/cascade limits must be measured.
 
 ## Validation
 
-Hardware pending. Test each UART locally, both inter-MCU SPI directions, multiple
-hops, downstream disconnect/recovery and continued service of unaffected ports.
+Firmware builds; ARM-emulated tests exercise the actual routing, UART queues,
+and both SPI byte drivers, with independent MCU instances for cascaded links.
+See project README and Tests/run_tests.py for rerun instructions and coverage.
+No physical boards have been tested. Check every UART/header, inter-MCU SPI,
+NSS/MISO behavior, simultaneous traffic, disconnect/reset/recovery and cable
+signal integrity when hardware arrives.

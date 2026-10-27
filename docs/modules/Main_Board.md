@@ -1,6 +1,6 @@
 # Main board
 
-Last reviewed: 2026-10-22. [All modules](README.md)
+Last reviewed: 2026-10-27. [All modules](README.md)
 
 ## Purpose
 
@@ -23,14 +23,15 @@ Detailed pin maps, connector numbering, supply rails and observations:
 ## Firmware and protocol status
 
 No main-board application firmware has been implemented in this repository.
-The F040 template is a starting point, not a hub implementation. ESP/PY32 SPI
-messages, module discovery and expansion routing remain to be defined.
-Existing UART module commands are documented on the ultrasonic and IR pages.
+The [expansion firmware](../../py32f040_Expansion_Module/README.md) now defines
+an initial hop/port SPI bridge protocol. Main-board ESP32/PY32 application
+integration remains pending; the template alone does not provide it. Existing
+sensor commands remain unchanged and are carried as raw UART payloads.
 
 ## Open decisions and next work
 
-Define application responsibilities, SPI bridge framing and routing, enumeration,
-timeouts and failure handling. Confirm the populated IMU option/BOM and exact
+Integrate the expansion bridge protocol and define application responsibilities,
+sensor discovery, response assembly and application failure handling. Confirm the populated IMU option/BOM and exact
 level-shifter part behavior. Preserve PSRAM and boot-strapping pin constraints.
 Audio features and display command interfaces need product requirements.
 

@@ -1,0 +1,25 @@
+{
+    // pyOCD lives in the per-user Python Scripts folder, which is not on PATH
+    // by default: %APPDATA%\Python\Python314\Scripts\pyocd.exe
+    // ${env:APPDATA} expands to C:\Users\<you>\AppData\Roaming, so this works
+    // for usernames containing spaces. Change "Python314" if you upgrade Python.
+    "cortex-debug.pyocdPath.windows": "${env:APPDATA}/Python/Python314/Scripts/pyocd.exe",
+
+    "files.associations": {
+        "py32f040_hal_def.h": "c",
+        "py32f0xx.h": "c",
+        "main.h": "c",
+        "py32f040_hal.h": "c",
+        "py32f040_hal_dma.h": "c",
+        "py32f040_hal_rcc.h": "c"
+    },
+    "cortex-debug.variableUseNaturalFormat": true,
+    "search.exclude": {
+        "**/Build": true,
+        "**/Temp": true
+    },
+    "files.watcherExclude": {
+        "**/Build/**": true,
+        "**/Temp/**": true
+    }
+}
