@@ -1,6 +1,6 @@
 # Colour sensor module
 
-Last reviewed: 2026-10-26. [All modules](README.md)
+Last reviewed: 2026-10-27. [All modules](README.md)
 
 ## Purpose
 
@@ -23,22 +23,35 @@ I2C address as `0x10`; this is an internal sensor bus, not the host transport.
 | Module RX / main TX | PA5 | 4 |
 | LED_EN | PA6 | 5 |
 
-LED_EN drives a BSS138 low-side illumination switch; gate has a pull-up to
-3.3 V. Firmware uses PA6 open-drain: release=on, sink=off, default on. SDA/SCL
-use AF12 open-drain without internal pulls. Source:
-[schematic](../../Modules%20Schematics/Schematic_Color_Sensor_UART.pdf).
+The [corrected schematic](../../Modules%20Schematics/Schematic_Color_Sensor_UART_New.pdf)
+was committed as dd8a5c8 and reviewed on 2026-10-27. It adds Q1/Q3 BSS138
+level shifters: gates to 3.3 V, sources to sensor-side SDA_3.3V/SCL_3.3V,
+drains to MCU-side SDA_5V/SCL_5V. Sensor U3 uses the 3.3 V nets; U1 PA2/PA3
+use the 5 V nets. R3/R4 pull the sensor bus to 3.3 V and R5/R6 pull the MCU
+bus to 5 V. All four are currently 10 kohm. The two sides are not directly tied.
+This topology addresses the earlier missing pull-ups and logic-level mismatch.
 
-**Board rework required, confirmed by the owner on 2026-10-26:** I2C pull-ups
-and level shifting were omitted from the board. No separate I2C pull-ups
-or level shifter appear in that PDF. The 5 V MCU requires input HIGH >=0.7*VCC
-(3.5 V), while the sensor bus is limited to 3.6 V and normally pulled to 3.3 V.
-A direct connection is not guaranteed; firmware cannot repair this mismatch.
-Rework the board with external pull-ups and compatible level shifting before
-hardware validation. Review the revised schematic and actual rework connections
-when available; no corrected wiring or physical validation has been verified yet.
-Do not enable the MCU's 5 V internal pulls on the sensor/gate nets.
-Sources: [PY32 Table 5-19](../../PUYA%20datasheets/PY32F003_Datasheet_Rev1.7.pdf),
-[VEML6040 datasheet](../../Module%20Datasheets/VEML6040_Vishay_84276.pdf).
+Q2 is now AO3400A: drain to LED1 cathode, source to GND, gate to PA6/LED_EN
+with R2=10 kohm to 3.3 V. U2=68 ohm is the LED series resistor. PA6 remains
+open-drain: release=on, sink=off, default on. Check actual LED current against
+its part/forward voltage. Verify physical MOSFET pin mappings against exact BOM
+parts; the PDF symbols do not establish PCB footprint correctness.
+
+The 10 kohm bus pull-ups are not automatically wrong at 100 kHz, but need rise-
+time verification. Recommend 4.7 kohm for R3-R6 for more margin on the short
+onboard bus; retain R2=10 kohm and the 68 ohm LED resistor. Standard-mode rise
+time must be <=1 us. The simple RC estimate tr=0.8473*R*C gives approximately
+118 pF maximum at 10 kohm, or 251 pF at 4.7 kohm; translator behavior and actual
+capacitance still require measurement on both sides. This is a recommendation,
+not a change applied to the owner's PDF. Reference:
+[TI pull-up calculation note](https://www.ti.com/lit/an/slva689/slva689.pdf).
+
+The [old schematic](../../Modules%20Schematics/Schematic_Color_Sensor_UART.pdf)
+remains historical evidence of the omissions confirmed by the owner on 2026-10-26.
+The corrected PDF supersedes it for implementation. Physical rework/new-board
+completion has not been confirmed, and no physical validation has occurred.
+MCU pins, 32 MHz crystal and UART mapping are unchanged; no firmware behavior
+change is needed. Retain external pull-ups and disabled internal pulls.
 
 ## Firmware and protocol status
 
@@ -53,7 +66,7 @@ Failures invalidate data and trigger reset/reconfiguration retries after 500 ms.
 
 ## Open decisions and next work
 
-Resolve the electrical issues above, then define optical calibration, reference
+Validate the corrected hardware and pull-up timing, then define optical calibration, reference
 surfaces, distance and named-colour features if required. Raw counts are not
 sRGB, colour names or calibrated surface reflectance. The driver verifies CONF
 readback; the sensor provides no identity register used by this implementation.
@@ -64,6 +77,6 @@ Internal I2C address 0x10 is unrelated to host UART addressing.
 Build passes: 9,364 bytes flash, 1,952 bytes linked RAM including vendor heap/
 stack reservations. All 15 ARM-emulated acquisition/bus-adapter/UART tests pass
 with mocked HAL IO; actual I2C timing and electrical/optical behavior are not
-simulated. No hardware validation has occurred. After electrical correction,
+simulated. No hardware validation has occurred. On the corrected physical board,
 verify readback/data, illumination, dark/reference colours, saturation, exposure
 timing, stack use and UART/error recovery on sensor disconnect or stuck lines.

@@ -6,23 +6,29 @@ Application code is commented; [module reference](../docs/modules/Color_Sensor.m
 tracks board decisions. Named-colour recognition, white balance, sRGB output,
 lux/CCT and surface calibration are not implemented in version 1.
 
-## Hardware status: I2C electrical changes required
+## Hardware status: corrected schematic reviewed, physical validation pending
 
-The [schematic](../Modules%20Schematics/Schematic_Color_Sensor_UART.pdf) powers
-the PY32 at 5 V and the sensor at 3.3 V. It shows no separate SDA/SCL pull-ups
-or level shifter. The [PY32 datasheet](../PUYA%20datasheets/PY32F003_Datasheet_Rev1.7.pdf),
-Table 5-19, specifies input HIGH >=0.7*VCC: 3.5 V at a 5 V supply. A direct
-3.3 V HIGH is therefore not guaranteed. The sensor bus must stay within its
-specified voltage limits; pulling it directly to 5 V is not a solution.
+The owner added [the corrected schematic](../Modules%20Schematics/Schematic_Color_Sensor_UART_New.pdf)
+in commit dd8a5c8; reviewed on 2026-10-27. It supersedes the
+[original schematic](../Modules%20Schematics/Schematic_Color_Sensor_UART.pdf),
+which omitted I2C pull-ups and level shifting. The PY32 remains at 5 V and the
+VEML6040 at 3.3 V. Q1/Q3 BSS138 now separate the two bus voltage domains,
+with gates at 3.3 V, sources on sensor nets and drains on MCU nets. R3/R4
+pull the sensor side to 3.3 V; R5/R6 pull the MCU side to 5 V.
 
-Before physical operation, provide external I2C pull-ups and a compatible
-voltage arrangement, such as appropriately pulled-up, bidirectional level
-shifting. Any MCU supply change also needs review of UART and other connections.
-The owner confirmed on 2026-10-26 that both pull-ups and level shifting were
-omitted and the board needs rework. Hardware validation must wait for that
-correction. Review the updated schematic/rework connections when available;
-no corrected board wiring has been verified yet.
-Firmware and simulated tests cannot resolve this electrical mismatch.
+R3-R6 are drawn as 10 kohm. They may work at 100 kHz on a short low-capacitance
+bus, but require measured rise times <=1 us. Recommend 4.7 kohm for all four
+for more timing margin; this recommendation has not been applied to the PDF.
+Keep the LED gate pull-up R2 at 10 kohm. Using tr=0.8473*R*C, the first-order
+capacitance allowance is approximately 118 pF at 10 kohm or 251 pF at 4.7 kohm;
+measure the translated bus on both sides rather than relying on this estimate.
+[TI calculation reference](https://www.ti.com/lit/an/slva689/slva689.pdf).
+
+The schematic now addresses the identified pull-up/voltage mismatch. Physical
+rework/new-board completion and PCB footprint/pin mapping remain unverified.
+The [old 5 V input-threshold concern](../PUYA%20datasheets/PY32F003_Datasheet_Rev1.7.pdf)
+is addressed by pulling the MCU-side bus to 5 V through the level shifters,
+while keeping the sensor-side bus at 3.3 V. No firmware behavior change is needed.
 
 | Function | GPIO / package pin | Configuration |
 |---|---|---|
@@ -32,7 +38,7 @@ Firmware and simulated tests cannot resolve this electrical mismatch.
 | Module RX / main TX | PA5 / 4 | USART2 RX, AF9 |
 | LED_EN | PA6 / 5 | Open-drain: release for on, sink for off |
 
-PA6 never drives a push-pull 5 V HIGH. Q1's gate is released to the schematic's
+PA6 never drives a push-pull 5 V HIGH. Q2 (AO3400A)'s gate is released to the schematic's
 3.3 V R2 pull-up when illumination is on. It defaults on, including the reset
 interval before firmware controls it; LED 0 sinks the gate to turn it off.
 No brightness PWM is implemented. The UART JST is 1 GND, 2 module TX/main RX,
@@ -153,7 +159,7 @@ accuracy. No physical-board validation has occurred.
 
 ## Hardware bring-up
 
-Resolve pull-ups/logic compatibility first. Scope MCU clock, both I2C bus
+Confirm the corrected physical wiring and recommended pull-up values. Scope MCU clock, both I2C bus
 voltage levels, rise times, ACKs and repeated START. Verify every word's byte
 order, force-mode conversion wait at each IT, LED_EN release/sink behavior,
 UART latency under disconnect/stuck-line conditions and recovery. Record dark,

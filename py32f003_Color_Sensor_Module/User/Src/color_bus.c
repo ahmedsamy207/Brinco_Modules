@@ -1,8 +1,8 @@
 /** @file color_bus.c
  *  @brief VEML6040 word transfers, repeated-start reads and mixed-rail GPIOs.
  *  Requires external I2C pull-ups and a voltage-compatible bus arrangement.
- *  The supplied schematic lacks those pull-ups/level shifting; firmware cannot
- *  make a 3.3 V HIGH meet the 5 V MCU's guaranteed 0.7*VCC input threshold.
+ *  The corrected _New schematic supplies BSS138 translators and pull-ups on
+ *  both voltage domains; actual rework and rise times still need verification.
  */
 #include "main.h"
 #include "color_bus.h"
@@ -29,9 +29,9 @@ void ColorBus_Init(void)
   GPIO_InitTypeDef gpio = {0};
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_I2C_CLK_ENABLE();
-  /* With VCC=5 V, both internal pulls and push-pull HIGH are inappropriate
-   * on the sensor/gate nets. External 3.3 V pulls and level compatibility
-   * must be supplied by the board, as recorded in the module reference. */
+  /* PA6 releases to the external 3.3 V lamp-gate pull-up. I2C uses external
+   * pull-ups: 5 V on the MCU side, 3.3 V on the sensor side of the BSS138s.
+   * Keep internal pulls disabled; validate external values on the board. */
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, COLOR_DEFAULT_LED ? GPIO_PIN_SET : GPIO_PIN_RESET);
   gpio.Pin = GPIO_PIN_6;
   gpio.Mode = GPIO_MODE_OUTPUT_OD;

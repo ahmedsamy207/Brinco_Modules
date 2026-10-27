@@ -46,7 +46,7 @@ template and name the folder `py32f0xx_<ModuleName>_Module`.
 
 | Project | MCU | Core | Flash / RAM | Purpose |
 |---------|-----|------|-------------|---------|
-| `py32f003_Color_Sensor_Module` | **PY32F003F18P6TU** | Cortex-M0+ @ 32 MHz | 64 KB / 8 KB | VEML6040 RGBW and illumination, USART2 at 115200 baud; board rework required for missing I2C pull-ups and level shifting |
+| `py32f003_Color_Sensor_Module` | **PY32F003F18P6TU** | Cortex-M0+ @ 32 MHz | 64 KB / 8 KB | VEML6040 RGBW and illumination, USART2 at 115200 baud; corrected schematic reviewed; physical validation pending |
 | `py32f003_Sound_Sensor_Module` | **PY32F003F18P6TU** | Cortex-M0+ @ 32 MHz | 64 KB / 8 KB | Relative sound level and comparator detection, USART2 at 115200 baud |
 | `py32f040_LED_Matrix_Module` | **PY32F040C1BT6** | Cortex-M0+ @ 72 MHz | 128 KB / 16 KB | 48 RGB LEDs, direct ESP32 SPI, TIM15/DMA output |
 | `py32f003_Touch_Sensor_Module` | **PY32F003F18P6TU** | Cortex-M0+ @ 32 MHz | 64 KB / 8 KB | XMXW 223 touch state, USART2 at 115200 baud |
