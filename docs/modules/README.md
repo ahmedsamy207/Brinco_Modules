@@ -1,6 +1,6 @@
 # Module development index
 
-Last reviewed: 2026-10-27. Start here when joining or resuming the project.
+Last reviewed: 2026-10-28. Start here when joining or resuming the project.
 
 These pages describe the agreed purpose, schematic wiring, implemented behavior,
 open decisions, and next steps for every board. Hardware is in manufacturing:
@@ -17,7 +17,7 @@ protocols, schematics, or validation results change.
 | Colour sensor | RGBW firmware builds; 15 software tests pass; corrected schematic with 4.7 kohm pull-ups reviewed; physical validation pending | [Colour Sensor](Color_Sensor.md) |
 | Sound sensor | Relative level/detection firmware builds; 13 software tests pass; hardware validation pending | [Sound Sensor](Sound_Sensor.md) |
 | Touch sensor | UART firmware builds; nine software tests pass; hardware validation pending | [Touch Sensor](Touch_Sensor.md) |
-| Stepper motor | Hardware reviewed; control requirements and firmware pending | [Stepper Motor](Stepper_Motor.md) |
+| Stepper motor | NFP-15BY-A full-step firmware builds;24 software tests pass; hardware pending | [Stepper Motor](Stepper_Motor.md) |
 | LED matrix | SPI/DMA firmware builds; 13 software tests pass; hardware validation pending | [LED Matrix](LED_Matrix.md) |
 | TFT display | ILI9341 display/touch firmware builds; 18 software tests pass; panel calibration and hardware validation pending | [TFT](TFT.md) |
 | I2S/audio board | Purpose agreed; ESP audio drivers/features pending; no onboard MCU | [I2S Audio](I2S_Audio.md) |

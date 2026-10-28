@@ -1,12 +1,12 @@
 # Stepper motor module
 
-Last reviewed: 2026-10-22. [All modules](README.md)
+Last reviewed: 2026-10-28. [All modules](README.md)
 
 ## Purpose
 
 Drive a stepper motor through a dual H-bridge and receive motion requests over
-UART. Speed, position, step mode, acceleration and current-control requirements
-are not yet specified; this page records wiring, not an implemented motion API.
+UART. The first firmware targets the NFP-15BY-A motor with full-step relative
+positioning, continuous rotation, adjustable speed/acceleration and stop/release.
 
 ## Confirmed hardware
 
@@ -36,22 +36,36 @@ as conflicting outputs. Source:
 
 ## Firmware and protocol status
 
-Not implemented. Start from the F040 template; proposed project name
-`py32f040_Stepper_Motor_Module` (not created). PB10/PB11 correspond to USART3;
-register configuration and alternate functions need implementation review.
-No motor commands or wire-format units have been agreed.
+Implemented in [py32f040_Stepper_Motor_Module](../../py32f040_Stepper_Motor_Module/README.md),
+created from the F040 template. Owner confirmed the NFP-15BY-A,1.5 mm shaft,
+10 ohm,5 V bipolar two-phase motor. It has18 degree full steps (20/revolution).
+USART3 uses PB10/PB11 AF4 at 115200 8N1. Core/APB runs72 MHz from 24 MHz HSE x3.
 
-## Open decisions and next work
+Supports signed relative MOVE, continuous RUN, adjustable SPEED/ACCEL, decelerated
+STOP with holding torque, immediate RELEASE, logical ZERO, STATUS and explicit
+fault CLEAR. Timer-driven full-step sequencing runs independently of UART replies.
+No half-step/microstep, physical homing, encoder, stall detection, motion queue,
+ADC/OPA monitoring or software current regulation is implemented.
 
-Confirm motor type, rated coil current, supply, coil mapping, step modes and
-desired motion features. Read the exact driver and MCU OPA/timer datasheets.
-Define startup/sleep behavior, drive sequence, current sensing/control,
-acceleration limits, stop behavior and fault recovery. Establish a disabled
-output state before enabling motion. Decide how a host learns busy/completed/
-fault state and how interrupted commands are handled.
+Startup is released. Driver fault/UART loss/position overflow latch a released
+fault; automatic driver retry never resumes motion. A valid host command at
+least once per second is required while moving or holding: approximately 2 s
+without keepalive releases coils and latches a timeout. Full protocol, units,
+error/retry semantics and NFP-15BY-A connector wiring are in the project README.
 
-## Validation
+## Current and motor assumptions
 
-No firmware build or hardware test. First check inactive outputs and fault/
-sleep states; then verify coil sequencing, current feedback and timing using
-the intended motor. Test direction, speed, stopping and fault recovery.
+The 0.2 ohm shunts set a nominal 1 A hardware chopping threshold, not a 500 mA
+software current setting. The 5 V/10 ohm winding estimate is approximately 500 mA
+per phase before bridge/sense drops; actual current/temperature require measurement.
+OPA-related pins remain analog high impedance, avoiding conflicting outputs on
+joined nets. Full-step HOLD uses full excitation until RELEASE or host timeout.
+
+## Validation and remaining work
+
+Firmware builds;24 ARM-emulated tests cover motion, GPIO/timer, UART/protocol,
+fault handling and timeout behavior. See project README for rerun instructions.
+No physical board/motor validation yet. Verify wiring, disabled outputs, wake,
+current/temperature, direction/counts, loaded speed/acceleration, stop/release,
+IRQ timing and fault/recovery before selecting production limits. Position is
+only an open-loop count; initial phase alignment and release can move the shaft.

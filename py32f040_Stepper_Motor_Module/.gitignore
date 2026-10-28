@@ -1,0 +1,6 @@
+/Temp*
+/Build*
+/.venv/
+
+__pycache__/
+*.pyc
