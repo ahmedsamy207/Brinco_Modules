@@ -1,6 +1,7 @@
 #include "main.h"
 #include "motion.h"
 #include "module_uart.h"
+#include "current_monitor.h"
 
 void SystemClock_Config(void);
 void APP_ErrorHandler(void);
@@ -17,7 +18,7 @@ int main(void)
 	HAL_Init();
   MotorIO_InitSafe(); /* Disable bridges even if crystal startup later fails. */
 	SystemClock_Config();
-  Motion_Init(); ModuleUART_Init(); MotorIO_StartTimer();
+  Motion_Init(); CurrentADC_Init(); ModuleUART_Init(); MotorIO_StartTimer();
 
 	while (1)
 	{

@@ -10,8 +10,8 @@
 #define MOTION_MAX_ACCEL 5000U
 #define MOTION_LEASE_TICKS (2U*MOTION_TICK_HZ)
 enum { MOTION_IDLE, MOTION_WAKING, MOTION_MOVING, MOTION_RUNNING, MOTION_STOPPING, MOTION_HOLD, MOTION_FAULT };
-enum { FAULT_NONE, FAULT_DRIVER, FAULT_TIMEOUT, FAULT_POSITION, FAULT_UART };
-enum { MOTION_OK, MOTION_BUSY, MOTION_BAD_VALUE, MOTION_LATCHED };
+enum { FAULT_NONE, FAULT_DRIVER, FAULT_TIMEOUT, FAULT_POSITION, FAULT_UART, FAULT_CURRENT, FAULT_SENSE };
+enum { MOTION_OK, MOTION_BUSY, MOTION_BAD_VALUE, MOTION_LATCHED, MOTION_NOT_READY };
 typedef struct {
  int32_t position;
  uint32_t remaining, velocity_q16;
@@ -37,7 +37,7 @@ void Motion_Stop(void);
 void Motion_Release(void);
 /** Foreground: set logical position0 only when not moving; no physical homing. */
 uint8_t Motion_Zero(void);
-/** Foreground: clear latch only while nFAULT is high; never restarts motion. */
+/** Foreground: clear latch only with nFAULT high and healthy current acquisition; no restart. */
 uint8_t Motion_Clear(void);
 /** Foreground: refresh the2s lease from a valid host command, including STATUS. */
 void Motion_KeepAlive(void);

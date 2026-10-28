@@ -44,8 +44,9 @@ USART3 uses PB10/PB11 AF4 at 115200 8N1. Core/APB runs72 MHz from 24 MHz HSE x3.
 Supports signed relative MOVE, continuous RUN, adjustable SPEED/ACCEL, decelerated
 STOP with holding torque, immediate RELEASE, logical ZERO, STATUS and explicit
 fault CLEAR. Timer-driven full-step sequencing runs independently of UART replies.
-No half-step/microstep, physical homing, encoder, stall detection, motion queue,
-ADC/OPA monitoring or software current regulation is implemented.
+No half-step/microstep, physical homing, encoder, stall detection, motion queue or
+software current regulation is implemented. OPA/ADC current monitoring is
+implemented, with startup calibration and supervisory shutdown.
 
 Startup is released. Driver fault/UART loss/position overflow latch a released
 fault; automatic driver retry never resumes motion. A valid host command at
@@ -58,13 +59,24 @@ error/retry semantics and NFP-15BY-A connector wiring are in the project README.
 The 0.2 ohm shunts set a nominal 1 A hardware chopping threshold, not a 500 mA
 software current setting. The 5 V/10 ohm winding estimate is approximately 500 mA
 per phase before bridge/sense drops; actual current/temperature require measurement.
-OPA-related pins remain analog high impedance, avoiding conflicting outputs on
-joined nets. Full-step HOLD uses full excitation until RELEASE or host timeout.
+OPA1 PA8 and OPA2 PA5 drive their feedback nets using analog output switches;
+tied PA2/PA4 are ADC inputs. Digital GPIOs stay analog, without output contention.
+Full-step HOLD uses full excitation until RELEASE or host timeout.
+
+Continuous ADC scans both amplified shunts plus VREFINT into circular DMA.
+CURRENT reports approximate sampled mean/peak mA, estimated VCCA and health;
+ILIMIT configures an IDLE-only100..1000 mA supervisory threshold (default750).
+Startup requires approximately80 ms of released settling/baseline calibration
+before motion. Three qualified high-current windows latch fault5; saturation,
+invalid/stale samples or ADC/DMA failures latch fault6. Fault5 needs three safe
+windows before CLEAR; acquisition fault6 needs reset. This is not RMS winding
+current measurement or cycle-by-cycle current regulation. Hardware clipping,
+chopping visibility, tolerances and threshold behavior need bench verification.
 
 ## Validation and remaining work
 
-Firmware builds;24 ARM-emulated tests cover motion, GPIO/timer, UART/protocol,
-fault handling and timeout behavior. See project README for rerun instructions.
+Firmware builds;38 ARM-emulated tests cover motion, GPIO/timer, UART/protocol,
+fault handling, current acquisition/qualification and timeout behavior. See project README for rerun instructions.
 No physical board/motor validation yet. Verify wiring, disabled outputs, wake,
 current/temperature, direction/counts, loaded speed/acceleration, stop/release,
 IRQ timing and fault/recovery before selecting production limits. Position is

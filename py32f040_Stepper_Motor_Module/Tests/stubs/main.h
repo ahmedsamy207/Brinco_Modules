@@ -87,4 +87,91 @@ extern EXTI_TypeDef test_exti;
 #define EXTI (&test_exti)
 HAL_StatusTypeDef HAL_TIM_Base_Init(TIM_HandleTypeDef *);
 HAL_StatusTypeDef HAL_TIM_Base_Start_IT(TIM_HandleTypeDef *);
+
+#define ENABLE 1U
+#define DISABLE 0U
+#define __HAL_RCC_OPA_CLK_ENABLE() ((void)0)
+#define __HAL_RCC_ADC_CLK_ENABLE() ((void)0)
+#define __HAL_RCC_DMA_CLK_ENABLE() ((void)0)
+#define __HAL_RCC_SYSCFG_CLK_ENABLE() ((void)0)
+#define __HAL_RCC_ADC_CONFIG(x) ((void)(x))
+#define RCC_ADCCLKSOURCE_PCLK_DIV8 8U
+#define OPA ((void *)4)
+#define OPA1 0U
+#define OPA2 1U
+typedef struct { void *Instance; struct { uint32_t Part; } Init; } OPA_HandleTypeDef;
+typedef struct { uint32_t CNDTR; } DMA_Channel_TypeDef;
+typedef struct { uint32_t ISR; } DMA_TypeDef;
+extern DMA_Channel_TypeDef test_dma_channel;
+extern DMA_TypeDef test_dma;
+#define DMA1_Channel1 (&test_dma_channel)
+#define DMA1 (&test_dma)
+typedef struct {
+ DMA_Channel_TypeDef *Instance;
+ struct { uint32_t Direction,PeriphInc,MemInc,PeriphDataAlignment,MemDataAlignment,Mode,Priority; } Init;
+} DMA_HandleTypeDef;
+typedef struct {
+ void *Instance;
+ struct { uint32_t Resolution,DataAlign,ScanConvMode,ContinuousConvMode,NbrOfConversion,DiscontinuousConvMode,ExternalTrigConv; } Init;
+ DMA_HandleTypeDef *DMA_Handle;
+} ADC_HandleTypeDef;
+typedef struct { uint32_t Channel,Rank,SamplingTime; } ADC_ChannelConfTypeDef;
+#define ADC1 ((void *)5)
+#define ADC_RESOLUTION_12B 12U
+#define ADC_DATAALIGN_RIGHT 0U
+#define ADC_SCAN_ENABLE 1U
+#define ADC_SOFTWARE_START 0U
+#define ADC_VREFBUF_VCCA 0U
+#define ADC_SAMPLETIME_134CYCLES_5 134U
+#define ADC_SAMPLETIME_239CYCLES_5 239U
+#define ADC_CHANNEL_2 2U
+#define ADC_CHANNEL_4 4U
+#define ADC_CHANNEL_VREFINT 17U
+#define ADC_REGULAR_RANK_1 1U
+#define ADC_REGULAR_RANK_2 2U
+#define ADC_REGULAR_RANK_3 3U
+#define DMA_PERIPH_TO_MEMORY 0U
+#define DMA_PINC_DISABLE 0U
+#define DMA_MINC_ENABLE 1U
+#define DMA_PDATAALIGN_HALFWORD 2U
+#define DMA_MDATAALIGN_HALFWORD 2U
+#define DMA_CIRCULAR 1U
+#define DMA_PRIORITY_HIGH 2U
+#define DMA_CHANNEL_MAP_ADC1 0U
+#define DMA1_Channel1_IRQn 9U
+#define ADC_COMP_IRQn 12U
+#define DMA_FLAG_GL1 15U
+#define DMA_FLAG_HT1 4U
+#define DMA_FLAG_TC1 2U
+#define DMA_FLAG_TE1 8U
+#define DMA_IT_HT 4U
+#define DMA_IT_TC 2U
+#define DMA_IT_TE 8U
+#define ADC_IT_OVR 1U
+#define __HAL_LINKDMA(h,f,d) ((h)->f=&(d))
+#define __HAL_DMA_DISABLE(h) Test_StopDMA()
+#define __HAL_DMA_DISABLE_IT(h,b) ((void)(b))
+#define __HAL_DMA_CLEAR_FLAG(h,b) (test_dma.ISR &= ~(b))
+#define __HAL_DMA_GET_COUNTER(h) Test_DMACounter()
+#define __HAL_ADC_DISABLE(h) ((void)(h))
+#define __HAL_ADC_ENABLE_IT(h,b) Test_ADCInterrupt(1U)
+#define __HAL_ADC_DISABLE_IT(h,b) Test_ADCInterrupt(0U)
+uint32_t Test_DMACounter(void);
+void Test_StopDMA(void);
+void Test_ADCInterrupt(uint32_t);
+void HAL_Delay(uint32_t);
+HAL_StatusTypeDef HAL_OPA_Init(OPA_HandleTypeDef *);
+HAL_StatusTypeDef HAL_OPA_Start(OPA_HandleTypeDef *);
+HAL_StatusTypeDef HAL_ADC_Init(ADC_HandleTypeDef *);
+HAL_StatusTypeDef HAL_ADCEx_Calibration_Start(ADC_HandleTypeDef *);
+HAL_StatusTypeDef HAL_ADC_ConfigVrefBuf(ADC_HandleTypeDef *,uint32_t);
+HAL_StatusTypeDef HAL_ADC_ConfigChannel(ADC_HandleTypeDef *,ADC_ChannelConfTypeDef *);
+HAL_StatusTypeDef HAL_DMA_Init(DMA_HandleTypeDef *);
+void HAL_DMA_ChannelMap(DMA_HandleTypeDef *,uint32_t);
+HAL_StatusTypeDef HAL_ADC_Start_DMA(ADC_HandleTypeDef *,uint32_t *,uint32_t);
+void HAL_DMA_IRQHandler(DMA_HandleTypeDef *);
+void HAL_ADC_IRQHandler(ADC_HandleTypeDef *);
+void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef *);
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *);
+void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *);
 #endif

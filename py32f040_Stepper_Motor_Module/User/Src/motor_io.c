@@ -2,7 +2,7 @@
  * AT8833: AIN1/2=PB4/5, BIN1/2=PB0/1, nSLEEP=PB6, nFAULT=PB7.
  * TIM6 update IRQ at20kHz from72MHz APB. No STEP/DIR translator is fitted.
  * PA1..10 are analog-only here: physically connected sense/OPA nets must never
- * become conflicting GPIO outputs. OPA/ADC are not enabled in this version.
+ * become conflicting GPIO outputs. current_adc.c enables the OPA output switches.
  */
 #include "main.h"
 #include "motion.h"

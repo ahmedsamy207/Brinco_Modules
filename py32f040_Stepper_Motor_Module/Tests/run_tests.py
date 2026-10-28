@@ -16,7 +16,7 @@ def build(out):
  subprocess.run(['arm-none-eabi-gcc','-mcpu=cortex-m0plus','-mthumb','-Os','-fno-builtin',
  '-nostdlib','-nostartfiles','-Wall','-Wextra','-Werror','-ITests/stubs','-IUser/Inc',
  'User/Src/motion.c','User/Src/motion_protocol.c','User/Src/motor_io.c','User/Src/module_uart.c',
- 'Tests/mock_hal.c','-TTests/link.ld','-lc','-lgcc','-o',str(elf)],cwd=ROOT,check=True)
+ 'User/Src/current_monitor.c','User/Src/current_adc.c','Tests/mock_hal.c','-TTests/link.ld','-lc','-lgcc','-o',str(elf)],cwd=ROOT,check=True)
  binary=elf.with_suffix('.bin');subprocess.run(['arm-none-eabi-objcopy','-O','binary',str(elf),str(binary)],check=True)
  symbols={}
  for line in subprocess.check_output(['arm-none-eabi-nm',str(elf)],text=True).splitlines():
@@ -66,6 +66,15 @@ class Firmware:
     def trace(self):
         n=int.from_bytes(self.read('test_trace_count',4),'little')
         return struct.unpack('<'+'I'*n,self.read('test_trace',4*n))
+
+    def current(self,a=0,b=0,vcca=5000,spikes=0):
+        samples=[]
+        for i in range(128):
+            av=a if not spikes or i<spikes else 0
+            samples.extend((round((100+av*3.2)*4095/vcca),round((100+b*3.2)*4095/vcca),round(1200*4095/vcca)))
+        self.write('test_samples',struct.pack('<384H',*samples))
+        self.call('Test_CurrentBlock')
+    def cf(self,index):return self.call('Test_CurrentField',index)
 
 class StepperTests(unittest.TestCase):
  def test_boot_released_with_expected_defaults(self):
@@ -179,6 +188,81 @@ class StepperTests(unittest.TestCase):
   f=Firmware();f.command('RUN 1');f.ms(300);p=f.position()
   f.send(b'PING\n');f.ms(100,keepalive=False);self.assertGreater(f.position(),p)
   f.call('Test_ProcessUART');self.assertEqual(f.output(),b'PONG\r\n')
+
+class CurrentTests(unittest.TestCase):
+ def test_opa_channels_and_long_reference_acquisition(self):
+  f=Firmware();self.assertEqual(int.from_bytes(f.read('test_opa_enabled',4),'little'),3)
+  self.assertEqual(struct.unpack('<3I',f.read('test_adc_channels',12)),(2,4,17))
+  self.assertEqual(struct.unpack('<3I',f.read('test_adc_times',12)),(134,134,239))
+ def test_startup_gate_calibrates_only_released_plausible_zero(self):
+  f=Firmware();f.call('Test_ResetSense');self.assertEqual(f.command('MOVE 1'),b'ERR NOT_READY\r\n')
+  for i in range(9):f.current()
+  self.assertEqual(f.cf(0),0);f.current();self.assertEqual(f.cf(0),1)
+  self.assertEqual(f.command('MOVE 1'),b'OK\r\n')
+ def test_independent_channel_scaling_and_supply_compensation(self):
+  for supply in (4500,5000,5250):
+   f=Firmware();f.current(500,250,supply)
+   self.assertAlmostEqual(f.cf(2),500,delta=2);self.assertAlmostEqual(f.cf(3),250,delta=2)
+   self.assertAlmostEqual(f.cf(6),supply,delta=5)
+   self.assertIn(b'CURRENT A ',f.command('CURRENT'))
+ def test_chopped_sample_average_and_peak_are_distinct(self):
+  f=Firmware();f.current(500,0,spikes=64)
+  self.assertAlmostEqual(f.cf(2),250,delta=2);self.assertAlmostEqual(f.cf(4),500,delta=2)
+  self.assertEqual(f.cf(3),0)
+ def test_isolated_spikes_do_not_trip_or_leak_streak(self):
+  f=Firmware();f.command('RUN 1')
+  for i in range(20):f.current(1000,spikes=4)
+  self.assertEqual(f.field(6),0);self.assertGreater(f.cf(4),990)
+  f.current(900);f.current(900);f.current();f.current(900);f.current(900)
+  self.assertEqual(f.field(6),0)
+ def test_sustained_high_current_either_coil_releases_and_latches(self):
+  for a,b in ((900,0),(0,900)):
+   f=Firmware();f.command('RUN 1');f.ms(50)
+   f.current(a,b);f.current(a,b);self.assertEqual(f.field(6),0)
+   f.current(a,b);self.assertEqual((f.field(0),f.field(6),f.cf(1)),(FAULT,5,5))
+   self.assertEqual(f.call('Test_Output')&0x73,0)
+   self.assertEqual(f.command('CLEAR'),b'ERR FAULT\r\n')
+   for i in range(3):f.current()
+   self.assertEqual(f.command('CLEAR'),b'OK\r\n');self.assertEqual(f.field(0),IDLE)
+ def test_adc_saturation_fault_requires_reset_even_after_low_samples(self):
+  f=Firmware();f.command('RUN 1')
+  f.current(1460);f.current(1460);f.current(1460)
+  self.assertEqual(f.cf(1),6);self.assertEqual(f.cf(0),0)
+  for i in range(4):f.current()
+  self.assertEqual(f.command('CLEAR'),b'ERR FAULT\r\n')
+ def test_invalid_reference_or_out_of_range_raw_disables(self):
+  for raw in ((82,82,0),(82,82,1800),(5000,82,983)):
+   f=Firmware();f.command('RUN 1');f.write('test_samples',struct.pack('<3H',*raw)*128)
+   f.call('Test_CurrentBlock');self.assertEqual((f.cf(1),f.field(6)),(6,6))
+   self.assertEqual(f.call('Test_Output')&0x73,0)
+ def test_calibration_refuses_high_stuck_signal(self):
+  f=Firmware();f.call('Test_ResetSense')
+  f.current();f.current();f.current(500)
+  self.assertEqual(f.cf(1),6);self.assertEqual(f.cf(0),0)
+ def test_no_dma_or_stale_sampling_cannot_be_cleared(self):
+  f=Firmware();f.command('RUN 1');f.call('Test_AutoADC',0);f.ms(40)
+  self.assertEqual((f.field(6),f.cf(1)),(6,6));self.assertEqual(f.call('Test_Output')&0x73,0)
+  f.current();self.assertEqual(f.command('CLEAR'),b'ERR FAULT\r\n')
+ def test_dma_transfer_error_missed_boundaries_and_mid_analysis_wrap(self):
+  for flags in (8,6):
+   f=Firmware();f.command('RUN 1');f.call('Test_DMAFlags',flags)
+   self.assertEqual((f.cf(1),f.cf(9)),(6,0));self.assertEqual(f.call('Test_Output')&0x73,0)
+  f=Firmware();previous=f.cf(8);f.call('Test_CrossBoundary',1);f.current(500)
+  self.assertEqual(f.cf(8),previous);self.assertEqual((f.cf(1),f.cf(9)),(6,0))
+ def test_adc_overrun_error_stops_dma_and_motion(self):
+  f=Firmware();f.command('RUN 1');f.call('Test_ADCError')
+  self.assertEqual((f.cf(1),f.cf(9),f.field(6)),(6,0,6))
+ def test_threshold_bounds_and_runtime_change_restriction(self):
+  f=Firmware()
+  for v in (0,99,1001,-1):self.assertEqual(f.command(f'ILIMIT {v}'),b'ERR ARG\r\n')
+  self.assertEqual(f.command('ILIMIT 600'),b'OK\r\n');self.assertEqual(f.cf(7),600)
+  f.command('RUN 1');self.assertEqual(f.command('ILIMIT 800'),b'ERR BUSY\r\n')
+  for i in range(3):f.current(700)
+  self.assertEqual(f.field(6),5)
+ def test_current_command_preserves_keepalive(self):
+  f=Firmware();f.command('RUN 1')
+  for i in range(4):f.ms(1000,keepalive=False);self.assertIn(b'READY 1 FAULT 0',f.command('CURRENT'))
+  self.assertEqual(f.field(6),0)
 
 if __name__=='__main__':
  with tempfile.TemporaryDirectory() as tmp:

@@ -1,10 +1,11 @@
 /** @file motion.c
  * Fixed-point acceleration and phase accumulation, independent of motor HAL.
  * The driver limits current in hardware at0.2V/0.2ohm nominal1A; no software
- * current regulation or ADC/OPA feedback is claimed by this full-step version.
+ * current regulation is claimed. OPA/ADC supervision is in current_monitor.c.
  */
 #include "main.h"
 #include "motion.h"
+#include "current_monitor.h"
 #include <string.h>
 static volatile MotionStatus motor;
 static uint32_t phase_accumulator,lease;
@@ -33,6 +34,7 @@ static uint8_t Start(int32_t direction,uint32_t count,uint8_t run)
  uint32_t m=Lock();uint8_t result=MOTION_OK;
  if(motor.fault) result=MOTION_LATCHED;
  else if(motor.state!=MOTION_IDLE && motor.state!=MOTION_HOLD) result=MOTION_BUSY;
+ else if(!CurrentMonitor_Get().ready) result=MOTION_NOT_READY;
  else if(MotorIO_Fault()) { Motion_Trip(FAULT_DRIVER);result=MOTION_LATCHED; }
  else {
   uint8_t held=motor.state==MOTION_HOLD;
@@ -86,6 +88,7 @@ uint8_t Motion_Clear(void)
  uint32_t m=Lock();uint8_t r=MOTION_OK;
  if(motor.state!=MOTION_FAULT && motor.state!=MOTION_IDLE) r=MOTION_BUSY;
  else if(MotorIO_Fault()) r=MOTION_LATCHED;
+ else if(!CurrentMonitor_Clear()) r=MOTION_LATCHED;
  else { motor.fault=FAULT_NONE;Release(); }
  __set_PRIMASK(m);return r;
 }
@@ -135,6 +138,7 @@ static void Ramp(void)
 }
 void Motion_Tick(void)
 {
+ CurrentMonitor_Tick();
  if(!Active()) return;
  if(MotorIO_Fault()) { Motion_Trip(FAULT_DRIVER);return; }
  if(++lease>=MOTION_LEASE_TICKS) { Motion_Trip(FAULT_TIMEOUT);return; }

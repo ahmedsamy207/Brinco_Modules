@@ -4,6 +4,7 @@
  */
 #include "motion.h"
 #include "motion_protocol.h"
+#include "current_monitor.h"
 #include <string.h>
 /** Strict bounded decimal parser; reject spaces, trailing text and overflow. */
 static uint8_t Number(const char *p,int32_t *value)
@@ -44,6 +45,19 @@ static void Status(char *reply,MotionStatus s,const char *name)
  p=Text(p,end," ACCEL ");p=Unsigned(p,end,s.acceleration);
  p=Text(p,end," FAULT ");p=Unsigned(p,end,s.fault);(void)Text(p,end,"\r\n");
 }
+/** Current is positive sampled shunt current, mA; not signed phase RMS. */
+static void CurrentReply(char *reply)
+{
+ CurrentReading r=CurrentMonitor_Get();char *p=reply,*end=reply+159;
+ p=Text(p,end,"CURRENT A ");p=Unsigned(p,end,r.mean_ma[0]);
+ p=Text(p,end," B ");p=Unsigned(p,end,r.mean_ma[1]);
+ p=Text(p,end," PEAKA ");p=Unsigned(p,end,r.peak_ma[0]);
+ p=Text(p,end," PEAKB ");p=Unsigned(p,end,r.peak_ma[1]);
+ p=Text(p,end," VCCA ");p=Unsigned(p,end,r.vcca_mv);
+ p=Text(p,end," LIMIT ");p=Unsigned(p,end,r.limit_ma);
+ p=Text(p,end," READY ");p=Unsigned(p,end,r.ready);
+ p=Text(p,end," FAULT ");p=Unsigned(p,end,r.fault);(void)Text(p,end,"\r\n");
+}
 void MotionProtocol_Execute(const char *line,char *reply)
 {
  uint8_t result=MOTION_BAD_VALUE,matched=0;int32_t value;
@@ -52,6 +66,7 @@ void MotionProtocol_Execute(const char *line,char *reply)
  if(!strcmp(line,"INFO")) {
   Motion_KeepAlive();strcpy(reply,"INFO BRINCO STEPPER 1 NFP-15BY-A FULL 20\r\n");return;
  }
+ if(!strcmp(line,"CURRENT")) { CurrentReply(reply);Motion_KeepAlive();return; }
  if(!strcmp(line,"STATUS")) {
   MotionStatus s=Motion_GetStatus();Motion_KeepAlive();
   Status(reply,s,names[s.state]);return;
@@ -61,8 +76,8 @@ void MotionProtocol_Execute(const char *line,char *reply)
  else if(!strcmp(line,"ZERO")) { result=Motion_Zero();matched=1; }
  else if(!strcmp(line,"CLEAR")) { result=Motion_Clear();matched=1; }
  else {
-  static const char *const verbs[]={"MOVE ","RUN ","SPEED ","ACCEL "};
-  for(uint8_t i=0;i<4;i++) {
+  static const char *const verbs[]={"MOVE ","RUN ","SPEED ","ACCEL ","ILIMIT "};
+  for(uint8_t i=0;i<5;i++) {
    size_t n=strlen(verbs[i]);
    if(!strncmp(line,verbs[i],n)) {
     matched=1;
@@ -71,6 +86,7 @@ void MotionProtocol_Execute(const char *line,char *reply)
      else if(i==1) result=Motion_Run(value);
      else if(i==2 && value>0) result=Motion_Speed((uint32_t)value);
      else if(i==3 && value>0) result=Motion_Acceleration((uint32_t)value);
+     else if(i==4 && value>0) result=CurrentMonitor_SetLimit((uint32_t)value);
     }
     break;
    }
@@ -79,6 +95,7 @@ void MotionProtocol_Execute(const char *line,char *reply)
  if(!matched) strcpy(reply,"ERR COMMAND\r\n");
  else if(result==MOTION_OK) { Motion_KeepAlive();strcpy(reply,"OK\r\n"); }
  else if(result==MOTION_BUSY) strcpy(reply,"ERR BUSY\r\n");
+ else if(result==MOTION_NOT_READY) strcpy(reply,"ERR NOT_READY\r\n");
  else if(result==MOTION_LATCHED) strcpy(reply,"ERR FAULT\r\n");
  else strcpy(reply,"ERR ARG\r\n");
 }

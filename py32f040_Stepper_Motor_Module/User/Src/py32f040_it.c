@@ -107,3 +107,8 @@ void PVD_IRQHandler(void)
 /* USART3 shares its vector with unused USART4; only USART3 is enabled. */
 #include "module_uart.h"
 void USART3_4_IRQHandler(void) { ModuleUART_IRQHandler(); }
+
+/* Current acquisition vectors; no stepping or UART work here. */
+#include "current_monitor.h"
+void DMA1_Channel1_IRQHandler(void) { CurrentADC_DMAIRQ(); }
+void ADC_COMP_IRQHandler(void) { CurrentADC_ADCIRQ(); }

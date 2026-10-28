@@ -23,14 +23,15 @@ not the B motor's different winding resistance and wire colours.
 | Driver nSLEEP / nFAULT | PB6 / PB7 | Output / active-low input with falling EXTI |
 | AISEN | PA1 and PA9 | Analog high impedance |
 | BISEN | PA3 and PA7 | Analog high impedance |
-| OPA_A_OUT | PA2 and PA8 | Analog high impedance |
+| OPA_A_OUT | PA8 output tied to PA2 | OPA1 output switch / ADC2 input |
 | OPA_A_INN | PA10 | Analog high impedance |
-| OPA_B_OUT | PA4 and PA5 | Analog high impedance |
+| OPA_B_OUT | PA5 output tied to PA4 | OPA2 output switch / ADC4 input |
 | OPA_B_INN | PA6 | Analog high impedance |
 
-Connected sense/OPA pins remain analog inputs; the firmware never drives
-physically joined MCU pins against one another. ADC/OPA monitoring and software
-current regulation are **not implemented** in this first version.
+All connected sense/OPA pins use GPIO analog mode. OPA1 drives only PA8 and
+OPA2 only PA5 through their analog output switches; tied PA2/PA4 are ADC inputs.
+No digital GPIO outputs contend on these nets. Both amplifiers and current
+monitoring are implemented; closed-loop software current regulation is not.
 
 The fitted 24 MHz HSE feeds PLL x3 for 72 MHz core/APB, flash latency2.
 `HSE_VALUE=24000000U` agrees in Makefile and HAL config. Crystal/PLL failure
@@ -85,6 +86,8 @@ command and consume its reply before the next. No unsolicited events.
 | `PING` | Link check and keepalive | `PONG` |
 | `INFO` | Firmware/motor/step identification | `INFO BRINCO STEPPER 1 NFP-15BY-A FULL 20` |
 | `STATUS` | Coherent motion snapshot and keepalive | See below |
+| `CURRENT` | Sampled shunt current/diagnostics and keepalive | See current monitoring below |
+| `ILIMIT 750` | Supervisory threshold,100..1000 mA per winding; IDLE only, default750 | `OK` |
 | `SPEED 100` | Target full steps/s,1..500; default 50 | `OK` |
 | `ACCEL 200` | Acceleration/deceleration full steps/s²,1..5000; default 100 | `OK` |
 | `MOVE 20` | Move+20 full steps from current logical position | `OK` when accepted |
@@ -93,7 +96,7 @@ command and consume its reply before the next. No unsolicited events.
 | `STOP` | Cancel target and decelerate to HOLD | `OK` |
 | `RELEASE` | Immediately disable coils and cancel motion | `OK` |
 | `ZERO` | Set logical position0 while IDLE/HOLD only; no movement/homing | `OK` |
-| `CLEAR` | Clear fault while released and nFAULT high; never auto-restart | `OK` |
+| `CLEAR` | Clear released fault with nFAULT high and healthy current acquisition; see recovery below | `OK` |
 
 All replies end CRLF. `OK` acknowledges acceptance, not move completion. Poll
 STATUS for HOLD after a completed MOVE/STOP. SPEED and ACCEL can change during
@@ -123,7 +126,8 @@ never resumes firmware motion automatically.
 
 Errors: `ERR COMMAND` unknown verb; `ERR ARG` invalid number/range/grammar;
 `ERR BUSY` operation incompatible with current state; `ERR FAULT` latched fault
-or fault pin still low; `ERR LINE` invalid/overlong line; `ERR LINE_TIMEOUT`
+or acquisition cannot be cleared; `ERR NOT_READY` startup current calibration
+incomplete; `ERR LINE` invalid/overlong line; `ERR LINE_TIMEOUT`
 partial-line expiry; `ERR RX` lost/corrupted UART input. Invalid lines are
 discarded through the next LF so suffixes cannot become motion commands.
 UART errors/overflow release coils and latch fault4. Reply transmission is
@@ -134,6 +138,73 @@ may already have been accepted. This UART protocol has no transaction-ID cache.
 Read STATUS and reconcile the application state. The expansion bridge protects
 its own repeated WRITE packets but cannot make arbitrary application retries
 of a new UART command safe.
+
+## Current monitoring and supervision
+
+OPA1/OPA2 use the external15 kΩ /1 kΩ feedback networks, gain16. With0.2 Ω
+shunts, nominal gain is3.2 V/A. ADC1 continuously scans **PA2/ADC2 (A), PA4/ADC4
+(B), internal VREFINT** into a circular DMA buffer. The core clock remains
+72 MHz from the24 MHz crystal. ADC clock is PCLK/8=9 MHz, with134.5-cycle
+external samples and239.5-cycle internal reference acquisition (>20 μs).
+Unequal acquisition times avoid an intentionally phase-locked scan at the
+nominal driver chopping rate; real aliasing and waveform coverage must be
+checked with a scope. The channels are sequential, not simultaneous.
+
+Each DMA half contains128 triplets, approximately an8 ms observation window.
+The firmware verifies DMA ownership before/after analysis and publishes only
+a validated half. Two initial settling windows are followed by eight released
+zero-offset windows. MOVE/RUN return `ERR NOT_READY` until calibration completes
+(roughly80 ms after acquisition starts). Poll CURRENT until READY1 before motion.
+No motor is energized during calibration. An implausible released baseline
+(mean>300 mV or peak>500 mV) faults instead of hiding a stuck signal as zero.
+
+VCCA is estimated each window from nominal1.200 V VREFINT. Average and peak
+amplifier voltages are offset-corrected and converted to positive milliamps:
+`mA ≈ max(output_mV − released_offset_mV,0) /3.2`. Internal reference tolerance,
+OPA offset/output floor, shunt/gain tolerances and board layout affect accuracy.
+Startup zeroing is a relative baseline correction, not a calibrated ammeter;
+OPA clipping near zero can bias larger readings too. No precision-current claim.
+
+Example reply, values in mA except VCCA in mV:
+
+```text
+CURRENT A 420 B 415 PEAKA 495 PEAKB 490 VCCA 5000 LIMIT 750 READY 1 FAULT 0
+```
+
+A/B are **sampled positive low-side shunt means over the latest window**;
+PEAKA/PEAKB are the largest captured samples from that window. They are not
+true winding-current RMS, signed phase current, guaranteed physical peaks or
+an all-time maximum. Recirculation/chopping can hide current from the shunt,
+and narrow switching pulses can be missed. A low reading does not prove no
+coil current or a disconnected motor. Read READY/FAULT before trusting values.
+
+`ILIMIT` changes the **fault threshold**, not the driven/current-regulated
+setpoint. It is RAM-only, shared by both windings and can change only while
+released in IDLE. Default750 mA leaves margin above the NFP-15BY-A's approximate
+500 mA winding-current estimate. It is an initial engineering setting requiring
+bench validation, not a certified motor thermal limit. The AT8833's shunt-set
+hardware chopping/OCP still operates independently and is not reprogrammed.
+
+An excessive-current window requires at least16 of128 samples above the
+threshold in either winding. Three consecutive excessive windows release both
+bridges and latch **fault5** (roughly24 ms after sustained evidence; a condition
+starting partway through a window can take another window). Brief spikes do
+not trip or accumulate across clean windows. Near-rail samples (ADC>=3800/4095)
+with the same16-of128 /three-window rule instead latch **fault6**, because OPA/
+ADC saturation invalidates the measurement. This is supervisory detection,
+not cycle-by-cycle limiting or a guarantee against every waveform/fault.
+
+DMA transfer errors, missed/coalesced boundaries, overwrite during analysis,
+ADC overrun, invalid VREFINT/VCCA (outside4.2..5.5 V) or invalid raw codes also
+latch fault6. Acquisition silence for800 motor ticks (40 ms) faults even while
+released. A late result cannot undo that failure. The motor fault code preserves
+the first cause; CURRENT's own fault field can show a later acquisition failure.
+
+For fault5, release has already occurred: wait for three consecutive safe
+windows (below the qualification criteria), then CLEAR with nFAULT high and
+issue a fresh motion command. Fault6 requires correcting the cause and a module
+reset/power cycle to restart/calibrate acquisition; CLEAR cannot bypass it.
+There is no automatic motion restart or runtime automatic recalibration.
 
 ## Timing, stop behavior and position limits
 
@@ -190,14 +261,17 @@ only and reset on power/reset. Restart begins released at default speed/accel.
 - `main.c`: disabled startup,24 MHz HSE/PLL, foreground UART service.
 - `motion.c/.h`: timer-driven state machine, profiles, limits, faults and lease.
 - `motor_io.c`: exact board pins, atomic coil writes, TIM6 and nFAULT IRQs.
+- `current_adc.c`: OPA startup, ADC scan, DMA ownership/error handling.
+- `current_monitor.c/.h`: startup baseline, supply compensation, telemetry and faults.
 - `motion_protocol.c/.h`: strict grammar and bounded heap-free status formatter.
 - `module_uart.c/.h`: RX ring, line validation/recovery and bounded replies.
 - `py32f040_it.c`: core exceptions and USART3 shared-vector adapter.
 
 Motion/fault state is shared with IRQs using brief critical sections. nFAULT
-EXTI has highest priority, TIM6 next, USART3 next. UART RX IRQs only enqueue
+EXTI has highest priority, TIM6 next, USART3/ADC error next, DMA analysis last. UART RX IRQs only enqueue
 bytes; foreground parses commands. No UART waits or floating-point formatting
-run in the motion IRQ. ADC/OPA inputs remain untouched analog connections.
+run in the motion IRQ. The motion tick also checks acquisition freshness.
+DMA analysis can be preempted; only brief publication/state updates mask IRQs.
 
 From this project folder with Arm GNU tools and make on PATH:
 
@@ -211,18 +285,24 @@ Use the usual standalone SWD workflow (`make flash`) with the motor/module
 correctly powered. Build outputs are under `Build/py32f040_Stepper_Motor_Module.*`.
 See SETUP_WINDOWS.md for probe/tool setup.
 
-The target build links at 8644 bytes flash and 1968 bytes static RAM (stack is
-additional). The 24 software tests ARM-compile the **actual motion, protocol, UART and motor
-GPIO/timer code** with warnings as errors and execute them in Unicorn2.1.4.
+The target build links at 13764 bytes flash and 3696 bytes linked RAM (stack is
+additional). The 38 software tests ARM-compile the **actual motion, protocol, UART, motor
+GPIO/timer, current processing and OPA/ADC/DMA adapter code** with warnings as errors and execute them in Unicorn2.1.4.
 Mocks provide HAL/register semantics and coil-output traces. Tests cover exact
 counts and phase order both directions, wake delay, acceleration/deceleration,
 continuous rotation/speed changes, release/hold, limits, busy commands, faults,
 lease expiry/renewal, partial/malformed input, UART overflow and error recovery.
+Current tests include startup gating/offset checks, channel scaling and supply
+variation, chopped mean/peak, spike rejection, sustained high current, threshold
+bounds, saturation, stale samples, DMA overwrite/errors and ADC error paths.
 They do not validate the real oscillator, GPIO electrical behavior, interrupt
 latency, motor torque/synchronism, current/temperature or cable connections.
 
 Hardware validation remains pending: first verify disabled startup and all four
 coil outputs without a motor; then nSLEEP wake and latched nFAULT shutdown;
+validate both OPA outputs and ADC scaling with known currents and supply levels;
+measure chopped/recirculation waveforms, offset drift and false-trip behavior;
+exercise injected overcurrent/sensor faults, DMA timing and acquisition loss;
 check coil pairs/direction, measured current,20-step nominal revolution, loaded
 speed/acceleration, STOP/release behavior, lease expiry and UART recovery. Measure
 IRQ duration/jitter, motor/driver temperature and supply behavior before setting

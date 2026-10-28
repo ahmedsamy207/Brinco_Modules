@@ -46,7 +46,7 @@ template and name the folder `py32f0xx_<ModuleName>_Module`.
 
 | Project | MCU | Core | Flash / RAM | Purpose |
 |---------|-----|------|-------------|---------|
-| `py32f040_Stepper_Motor_Module` | **PY32F040C1BT6** | Cortex-M0+ @ 72 MHz | 128 KB / 16 KB | NFP-15BY-A full-step moves/rotation, acceleration, stop/release and fault handling over USART3; hardware pending |
+| `py32f040_Stepper_Motor_Module` | **PY32F040C1BT6** | Cortex-M0+ @ 72 MHz | 128 KB / 16 KB | NFP-15BY-A motion, acceleration, stop/release and OPA/ADC current supervision over USART3; hardware pending |
 | `py32f040_Expansion_Module` | **PY32F040C1BT6** | Cortex-M0+ @ 72 MHz | 128 KB / 16 KB | Same image for both expansion MCUs; SPI hop routing and four buffered UARTs per MCU; hardware pending |
 | `py32f040_TFT_Module` | **PY32F040C1BT6** | Cortex-M0+ @ 72 MHz | 128 KB / 16 KB | ILI9341 RGB565 display and resistive touch, direct ESP32 SPI; hardware calibration pending |
 | `py32f003_Color_Sensor_Module` | **PY32F003F18P6TU** | Cortex-M0+ @ 32 MHz | 64 KB / 8 KB | VEML6040 RGBW and illumination, USART2 at 115200 baud; corrected schematic reviewed; physical validation pending |
