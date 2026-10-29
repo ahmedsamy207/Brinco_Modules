@@ -1,11 +1,10 @@
 /** @file tft_board.h
- *  @brief Pin map from Schematic_TFT_Module.pdf; no GPIO is driven here.
- *  Target LCDWIKI MAR2406 ILI9341 reference profile; supplier stock's touch
- *  wiring still needs confirmation. Alternate WR/RS shields need a profile
- *  change; do not infer electrode mapping from the ILI9341 controller alone.
- *  Touch XP=D0=PA0, YM=D1=PA1, XM=RS=PB0, YP=CS=PB8. Both ends of
- *  each resistive layer are equivalent sense points when floating. PA0/PA1
- *  ADC channels 0/1 avoid needing an ADC on PB8. SD remains excluded.
+ *  @brief Owner-confirmed carrier revision2026-10-29; PDF replacement pending.
+ *  LCD CS=PB0/ADC8, RS=PB1/ADC9, WR=PB8. The repository's old schematic
+ *  PDF must not override this revision until the owner replaces that file.
+ *  LCDWIKI MAR2406 touch profile: XP=D0=PA0, YM=D1=PA1, XM=RS, YP=CS.
+ *  Supplier stock's electrode wiring still needs confirmation; alternate
+ *  WR/RS shields need a different profile. SD remains excluded.
  */
 #ifndef BRINCO_TFT_BOARD_H
 #define BRINCO_TFT_BOARD_H
@@ -26,17 +25,30 @@
 #define TFT_DATA_PORT GPIOA
 #define TFT_DATA_MASK 0x00FFU
 #define TFT_RS_PORT GPIOB
-#define TFT_RS_PIN GPIO_PIN_0
+#define TFT_RS_PIN GPIO_PIN_1
 #define TFT_WR_PORT GPIOB
-#define TFT_WR_PIN GPIO_PIN_1
+#define TFT_WR_PIN GPIO_PIN_8
 #define TFT_RD_PORT GPIOA
 #define TFT_RD_PIN GPIO_PIN_11
 #define TFT_CS_PORT GPIOB
-#define TFT_CS_PIN GPIO_PIN_8
+#define TFT_CS_PIN GPIO_PIN_0
 #define TFT_RESET_PORT GPIOB
 #define TFT_RESET_PIN GPIO_PIN_9
 
-/* Schematic reference only: no SD driver or SD pin initialization in v1. */
+/* Four shared electrodes. Conventional reads use YP/CS ADC8 for X,
+ * XM/RS ADC9 for Y; pressure reads XM then YP. WR is never an electrode. */
+#define TFT_TOUCH_XP_PORT GPIOA
+#define TFT_TOUCH_XP_PIN GPIO_PIN_0
+#define TFT_TOUCH_YM_PORT GPIOA
+#define TFT_TOUCH_YM_PIN GPIO_PIN_1
+#define TFT_TOUCH_XM_PORT TFT_RS_PORT
+#define TFT_TOUCH_XM_PIN TFT_RS_PIN
+#define TFT_TOUCH_YP_PORT TFT_CS_PORT
+#define TFT_TOUCH_YP_PIN TFT_CS_PIN
+#define TFT_TOUCH_XM_ADC ADC_CHANNEL_9
+#define TFT_TOUCH_YP_ADC ADC_CHANNEL_8
+
+/* SD reference: CS is parked HIGH; no SD driver or SPI2 operations. */
 #define TFT_SD_PORT GPIOB
 #define TFT_SD_CS_PIN GPIO_PIN_12
 #define TFT_SD_SCK_PIN GPIO_PIN_13

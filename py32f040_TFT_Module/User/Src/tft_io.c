@@ -2,7 +2,9 @@
  *  @brief MAR2406 ILI9341 write-only parallel IO and four-wire resistive touch.
  *  Initialization values adapted from lcdwiki/LCDWIKI_kbv (MIT); see
  *  ThirdParty/LCDWIKI_LICENSE.txt. The HAL/board glue and touch sequencing
- *  here target the PY32. All entry points are foreground-only; SPI IRQs
+ *  here target the PY32. Touch excitation follows the LCDWIKI TouchScreen
+ *  reference, (c) ladyada/adafruit (MIT); see ThirdParty/TOUCHSCREEN_LICENSE.txt.
+ *  All entry points are foreground-only; SPI IRQs
  *  never change LCD or touch pins. No interrupt mask spans a touch scan.
  */
 #include "tft_board.h"
@@ -111,7 +113,10 @@ void TFTIO_Init(void)
 
 /** @brief All panel electrodes high-Z before switching excitation direction. */
 static void FloatTouch(void)
-{ Mode(GPIOA,GPIO_PIN_0|GPIO_PIN_1,GPIO_MODE_ANALOG);Mode(GPIOB,GPIO_PIN_0|GPIO_PIN_8,GPIO_MODE_ANALOG); }
+{
+  Mode(TFT_TOUCH_XP_PORT,TFT_TOUCH_XP_PIN|TFT_TOUCH_YM_PIN,GPIO_MODE_ANALOG);
+  Mode(TFT_TOUCH_XM_PORT,TFT_TOUCH_XM_PIN|TFT_TOUCH_YP_PIN,GPIO_MODE_ANALOG);
+}
 static void Drive(GPIO_TypeDef *port,uint16_t pin,uint8_t high)
 { Pin(port,pin,high);Mode(port,pin,GPIO_MODE_OUTPUT_PP); }
 static uint8_t Convert(uint32_t channel,uint16_t *value)
@@ -131,7 +136,7 @@ static uint8_t Sample(uint32_t channel,uint16_t *value,uint8_t *stable)
   /* Discard charge from the previous channel, then median-filter three reads. */
   if(!Convert(channel,&discard)||!Convert(channel,&a)||!Convert(channel,&b)||!Convert(channel,&c)) return 0;
   if(a>b){t=a;a=b;b=t;}if(b>c){t=b;b=c;c=t;}if(a>b){t=a;a=b;b=t;}
-  if(c-a>TFT_TOUCH_SPREAD) *stable=0;
+  if((uint32_t)(c-a)>TFT_TOUCH_SPREAD) *stable=0;
   *value=b;return 1;
 }
 uint8_t TFTIO_ReadTouch(TFTRawTouch *raw)
@@ -142,16 +147,22 @@ uint8_t TFTIO_ReadTouch(TFTRawTouch *raw)
   /* WR and RD stay HIGH throughout. CS is itself YP and may float during
    * sensing; inactive strobes prevent LCD transactions even if CS floats LOW. */
   Pin(GPIOB,TFT_WR_PIN|TFT_CS_PIN,1);Pin(GPIOA,TFT_RD_PIN,1);
-  FloatTouch();Drive(GPIOA,GPIO_PIN_0,1);Drive(GPIOB,GPIO_PIN_0,0);DelayUs(20);
-  /* Sense YM (PA1), equivalent to floating YP (PB8, which has no ADC). */
-  if(!Sample(ADC_CHANNEL_1,&x,&stable)) goto done;
-  FloatTouch();Drive(GPIOB,GPIO_PIN_8,1);Drive(GPIOA,GPIO_PIN_1,0);DelayUs(20);
-  /* Sense XP (PA0), equivalent to floating XM. */
-  if(!Sample(ADC_CHANNEL_0,&y,&stable)) goto done;
-  /* Pressure excitation is the complementary diagonal: XM=LOW, YP=HIGH;
-   * read floating XP and YM using ADC0/1. No external touch controller needed. */
-  FloatTouch();Drive(GPIOB,GPIO_PIN_0,0);Drive(GPIOB,GPIO_PIN_8,1);DelayUs(20);
-  if(!Sample(ADC_CHANNEL_0,&z1,&stable)||!Sample(ADC_CHANNEL_1,&z2,&stable)) goto done;
+  FloatTouch();
+  Drive(TFT_TOUCH_XP_PORT,TFT_TOUCH_XP_PIN,1);
+  Drive(TFT_TOUCH_XM_PORT,TFT_TOUCH_XM_PIN,0);DelayUs(20);
+  /* X: excite the X layer, sense floating YP/CS=PB0 through ADC8. */
+  if(!Sample(TFT_TOUCH_YP_ADC,&x,&stable)) goto done;
+  FloatTouch();
+  Drive(TFT_TOUCH_YP_PORT,TFT_TOUCH_YP_PIN,1);
+  Drive(TFT_TOUCH_YM_PORT,TFT_TOUCH_YM_PIN,0);DelayUs(20);
+  /* Y: excite the Y layer, sense floating XM/RS=PB1 through ADC9. */
+  if(!Sample(TFT_TOUCH_XM_ADC,&y,&stable)) goto done;
+  FloatTouch();
+  Drive(TFT_TOUCH_XP_PORT,TFT_TOUCH_XP_PIN,0);
+  Drive(TFT_TOUCH_YM_PORT,TFT_TOUCH_YM_PIN,1);DelayUs(20);
+  /* Conventional pressure diagonal: XP LOW / YM HIGH; sense XM then YP.
+   * Recalibrate the real panel; this replaces the older complementary scan. */
+  if(!Sample(TFT_TOUCH_XM_ADC,&z1,&stable)||!Sample(TFT_TOUCH_YP_ADC,&z2,&stable)) goto done;
   raw->x=4095U-x;raw->y=4095U-y;
   raw->z=z2>=z1?4095U-(z2-z1):0U;raw->stable=stable;ok=1;
 done:

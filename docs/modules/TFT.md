@@ -1,6 +1,6 @@
 # TFT display and touch module
 
-Last reviewed: 2026-10-27. [All modules](README.md)
+Last reviewed: 2026-10-29. [All modules](README.md)
 
 ## Purpose and agreed scope
 
@@ -27,32 +27,32 @@ below is the LCDWIKI reference profile, not a verified pinout of seller stock.
 | Host TFT_CS / TFT_SCK | PA15 / PB3 |
 | Host TFT_MISO / TFT_MOSI | PB4 / PB5 |
 | LCD_D0..LCD_D7 | PA0..PA7 respectively |
-| LCD_RS / LCD_WR / LCD_RD | PB0 / PB1 / PA11 |
-| LCD_CS / LCD_RST | PB8 / PB9 |
-| Touch XP / YM / XM / YP (current firmware profile) | PA0 / PA1 / PB0 / PB8, shared with D0/D1/RS/CS |
+| LCD_RS / LCD_WR / LCD_RD | PB1 (ADC9) / PB8 / PA11 |
+| LCD_CS / LCD_RST | PB0 (ADC8) / PB9 |
+| Touch XP / YM / XM / YP (current firmware profile) | PA0 / PA1 / PB1 / PB0, shared with D0/D1/RS/CS |
 | Unused SD_SS / SD_SCK / SD_MISO / SD_MOSI | PB12 / PB13 / PB14 / PB15 |
 
 Host header: 1 MISO, 2 MOSI, 3 SCK, 4 5 V, 5 CS, 6 GND. This is the dedicated
 ESP32 TFT path, bypassing the UART hub. Simultaneous TFT/LED-matrix selection
-on the single CS path remains unspecified. Carrier source:
-[schematic](../../Modules%20Schematics/Schematic_TFT_Module.pdf).
+on the single CS path remains unspecified. The owner confirmed the new control
+pin map on 2026-10-29. The [earlier carrier schematic](../../Modules%20Schematics/Schematic_TFT_Module.pdf)
+still shows RS=PB0, WR=PB1, CS=PB8 and awaits replacement. This firmware targets
+**new CS=PB0, RS=PB1, WR=PB8**; the earlier PDF is not the source of that revision.
+The other connections above remain as previously reviewed until the new PDF is
+checked. Do not treat the schematic replacement as already reviewed/committed.
 
-The manufacturer's MAR2406 touch examples use Arduino XP=8, YM=9, XM=A2,
-YP=A3; generic library examples differ. PB8 has no ADC, so firmware senses the
-opposite floating electrode of each resistive layer using PA0/PA1 ADC0/1.
-Touch temporarily borrows four pins, keeps WR/RD inactive, switches excitation
-through high-Z and restores LCD outputs even on ADC errors. SD CS is parked
-HIGH; SPI2 and SD operations are not implemented. See
-[implementation references/license](../../py32f040_TFT_Module/ThirdParty/README.md).
+The manufacturer's MAR2406 examples use Arduino XP=8, YM=9, XM=A2, YP=A3.
+With this revision, firmware reads conventional X at YP/CS (ADC8), Y at XM/RS
+(ADC9), and pressure at XM/YP while XP LOW/YM HIGH. ADC0/1 are no longer used
+for touch acquisition. Touch borrows four pins, holds WR/RD HIGH, switches
+through high-Z and restores LCD outputs after success or ADC error. SD CS is
+parked HIGH; no SPI2/SD operations. See [implementation references/license](../../py32f040_TFT_Module/ThirdParty/README.md).
 
-Another common shield profile uses XP=D6, YM=D7, XM=RS, YP=WR. On this carrier
-that would be PA6, PA7, PB0 and PB1. PB0/RS and PB1/WR both have ADC inputs
-(8/9), so the conventional WR/RS sampling layout is compatible with the
-carrier. It would require a firmware touch-profile change; the current runtime
-does not auto-detect or implement that alternate pin mapping. Confirm seller
-stock through its actual schematic/test sketch or electrode-resistance tracing
-before selecting a profile or deciding on PCB rework. No rework requirement
-can be concluded from the product title/controller alone.
+Generic WR/RS shields have different electrodes and need a separate firmware
+profile. In the revised map WR=PB8 has no ADC; the old WR/RS sampling assumptions
+no longer apply. Confirm the actual supplied board from its schematic/sketch
+or electrode-resistance tracing. Recalibrate coordinates/pressure thresholds on
+the real panel after the revision; old host-stored calibration is unvalidated.
 
 ## Implemented behavior
 
@@ -77,11 +77,13 @@ queue; short taps between polls can be missed.
 
 ## Validation and remaining work
 
-Build passes: 11,732 bytes flash, 2,400 bytes linked RAM including vendor heap/
-stack reservations. All 18 ARM-emulated renderer/touch-mapping/protocol/SPI/host
-helper tests pass. LCD/ADC IO is mocked; real tft_io.c, HAL, electrical timing,
-GPIO restoration and optical behavior are not simulated. No physical tests have
-occurred. Verify initialization, RGB bars, geometry/rotation, shared-pin touch
+Build passes: 11,728 bytes flash, 2,400 bytes linked RAM including vendor heap/
+stack reservations. All 30 ARM-emulated tests pass: 18 renderer/touch-mapping/
+protocol/SPI/host tests
+plus 12 tests of actual tft_io.c using GPIO/ADC/timer mocks. The IO tests exercise
+the revised pin map, conventional sensing/pressure, failure cleanup and pixel
+writes; they do not establish real HAL timing or electrical/optical behavior.
+No physical tests have occurred. Verify initialization, RGB bars, geometry/rotation, shared-pin touch
 sampling and ADC settling under concurrent SPI, calibration accuracy, drags/
 release/reset, stack headroom and first/last SPI bytes. Measure panel sheet
 resistance and GPIO excitation currents at 5 V against the MCU ratings before

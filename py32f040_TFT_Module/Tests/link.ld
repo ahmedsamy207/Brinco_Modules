@@ -6,7 +6,8 @@ MEMORY {
 }
 SECTIONS {
   .text : { *(.text*) *(.rodata*) } > FLASH
-  .data : { *(.data*) } > RAM AT > FLASH
+  .data : { _sdata = .; *(.data*) _edata = .; } > RAM AT > FLASH
+  _sidata = LOADADDR(.data);
   .bss (NOLOAD) : { *(.bss*) *(COMMON) } > RAM
   .ARM.exidx : { *(.ARM.exidx*) } > FLASH
 }

@@ -1,7 +1,8 @@
 """Run actual ARM-compiled renderer/touch/protocol/transport code with mocked IO.
 
 Requires Arm GNU tools on PATH and pip install -r Tests/requirements.txt.
-No probe, real GPIO/ADC, panel resistance or SPI FIFO/shift-register timing are tested.
+Actual tft_io.c GPIO/ADC sequencing runs in a second mocked-HAL suite.
+No probe, electrical ADC/panel behavior or SPI FIFO timing is tested.
 """
 from pathlib import Path
 import binascii
@@ -48,6 +49,9 @@ class Firmware:
         self.cpu.mem_map(0x10000,0x30000)
         self.cpu.mem_map(0x20000000,0x80000)
         self.cpu.mem_write(0x10000,binary)
+        size=self.symbols['_edata']-self.symbols['_sdata']
+        if size:
+            self.cpu.mem_write(self.symbols['_sdata'],bytes(self.cpu.mem_read(self.symbols['_sidata'],size)))
         self.call("Test_Init")
     def call(self,name,value=0):
         self.cpu.reg_write(UC_ARM_REG_SP,0x2007fff0)
@@ -278,5 +282,7 @@ class TFTTests(unittest.TestCase):
 
 if __name__=="__main__":
     with tempfile.TemporaryDirectory(prefix="brinco-tft-tests-") as directory:
+        from test_tft_io import IOTests,prepare
         IMAGE=build(Path(directory))
+        prepare(Path(directory))
         unittest.main(verbosity=2)

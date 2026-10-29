@@ -1,6 +1,6 @@
 # TFT implementation references
 
-Reviewed 2026-10-27. Target is LCDWIKI MAR2406 with ILI9341, as linked by the
+Reviewed 2026-10-29. Target is LCDWIKI MAR2406 with ILI9341, as linked by the
 project owner. The page also links an ST7789V package; that controller is not
 supported by this build. Verify the supplied module variant.
 
@@ -17,13 +17,15 @@ protocol and PY32 glue here are separate C implementations.
 
 The manufacturer's touch_pen and TouchScreen_Calibr sketches use XP=8,
 YM=9, XM=A2, YP=A3, equivalent to LCD D0/D1/RS/CS. The TouchScreen library
-credits ladyada/Adafruit under MIT. Its four-wire excitation method was
-consulted; our implementation uses complementary sensing/pressure connections
-to avoid non-ADC PB8, with separate filtering/calibration. Generic examples
-use different pins. A common alternate is XP=6, YM=7, XM=A2, YP=A1,
-equivalent to D6/D7/RS/WR. The supplier listing does not establish which
-electrode map its stock uses. Select wiring from the actual board evidence;
-the current implementation targets only the CS/RS reference profile.
+credits ladyada/Adafruit under MIT; its notice is retained in
+[TOUCHSCREEN_LICENSE.txt](TOUCHSCREEN_LICENSE.txt). The PY32 implementation uses
+the conventional excitation/sense pattern with separate filtering/calibration.
+Owner-confirmed carrier revision 2026-10-29 maps XM/RS to PB1/ADC9 and YP/CS to
+PB0/ADC8, while WR moves to PB8. This replaces the prior complementary
+ADC0/1 sensing method. The repository carrier PDF still awaits replacement.
+Generic examples differ; a common alternate XP=6,YM=7,XM=A2,YP=A1 uses D6/D7/
+RS/WR. That alternate profile is not implemented. The supplier listing still
+does not independently prove the stock's electrode map.
 
 SHA-256 of reviewed downloads (not copies distributed by this project):
 

@@ -10,10 +10,13 @@ shields, including the ST7789V variant linked on that page, are not interchangea
 The owner's intended purchase is [Ampere product 25678](https://ampere-electronics.com/product/2-4-inch-tft-lcd-shield-touch-display-module-for-arduino/).
 Its indexed listing names MAR2406/ILI9341 but does not establish the supplied
 board's touch wiring. The current firmware uses the LCDWIKI-specific CS/RS
-profile below. Some shields instead use WR/RS with D6/D7; that profile would
-map to PA6/PA7/PB0/PB1 and requires a firmware change, not an assumed match.
-WR=PB1/ADC9 and RS=PB0/ADC8 are already ADC-capable on this carrier. Confirm
-the actual module pin map before changing firmware or reworking the PCB.
+profile below. The owner confirmed the revised carrier connections on 2026-10-29:
+**LCD_CS=PB0/ADC8, LCD_RS=PB1/ADC9, LCD_WR=PB8**. This firmware targets that
+revision. The repository schematic PDF still shows the earlier wiring and is
+awaiting the owner's replacement; do not manufacture from the old PDF assuming
+it matches this firmware. The actual purchased shield's electrode wiring still
+needs confirmation. An alternate WR/RS shield needs a separate touch profile;
+the revised WR=PB8 has no ADC input.
 
 PY32F040C1BT6 uses fitted 24 MHz HSE, PLL x3 to 72 MHz, flash latency 2 and
 consistent HAL/CMSIS HSE_VALUE. Clock failure halts without HSI fallback.
@@ -22,9 +25,9 @@ Pixels use RGB565. No full framebuffer is allocated (one would need 153,600 byte
 Initialization is write-only: configured controller identity is not electrically
 probed. Verify the actual delivered panel is the documented ILI9341 model.
 
-## Confirmed carrier wiring
+## Owner-confirmed revised carrier wiring
 
-[Schematic](../Modules%20Schematics/Schematic_TFT_Module.pdf),
+[Earlier schematic, replacement pending](../Modules%20Schematics/Schematic_TFT_Module.pdf),
 [module reference](../docs/modules/TFT.md),
 [commented pin definitions](User/Inc/tft_board.h).
 
@@ -35,10 +38,10 @@ probed. Verify the actual delivered panel is the documented ILI9341 model.
 | Host SPI1 MISO | PB4 / 40 |
 | Host SPI1 MOSI | PB5 / 41 |
 | LCD D0..D7 | PA0..PA7 / 10..17 |
-| LCD RS | PB0 / 18 |
-| LCD WR | PB1 / 19 |
+| LCD RS / XM | PB1 / 19, ADC9 |
+| LCD WR | PB8 / 45 |
 | LCD RD | PA11 / 32 |
-| LCD CS | PB8 / 45 |
+| LCD CS / YP | PB0 / 18, ADC8 |
 | LCD RESET | PB9 / 46 |
 
 SPI header: 1 MISO, 2 MOSI, 3 SCK, 4 5 V, 5 CS, 6 GND. The main ESP32
@@ -57,14 +60,17 @@ YM=D9, XM=A2, YP=A3. These translate to:
 |---|---|---|
 | XP | D0 | PA0, ADC0 |
 | YM | D1 | PA1, ADC1 |
-| XM | RS | PB0 |
-| YP | CS | PB8 (no ADC input) |
+| XM | RS | PB1, ADC9 |
+| YP | CS | PB0, ADC8 |
 
 Do not copy the different pins from generic TouchScreen library examples.
-The firmware samples floating YM for X and floating XP for Y: opposite ends
-of an undriven resistive layer have the same ideal sense voltage. For pressure,
-XM is driven LOW and YP HIGH, while XP/YM are sampled. This avoids needing ADC
-on PB8. The method and actual settling/loading need board validation.
+The revised firmware uses conventional sampling: excite XP HIGH/XM LOW and
+read X from floating YP/CS through ADC8; excite YP HIGH/YM LOW and read Y from
+floating XM/RS through ADC9. For the pressure proxy, drive XP LOW/YM HIGH and
+read XM (ADC9) then YP (ADC8). ADC0/1 are no longer sampled for touch. All four
+electrodes float before each excitation change. Recalibrate coordinates and
+validate the pressure band on the real panel after this wiring/scan change;
+do not assume host-saved values from the earlier complementary scan still fit.
 
 WR and RD stay HIGH while touch borrows pins. Every electrode becomes high-Z
 before excitation changes, and every path restores the LCD outputs, including
@@ -198,20 +204,26 @@ Host storage can resend the measured calibration after every module reset.
 ## Build, software tests and hardware validation
 
 Run make all; [SETUP_WINDOWS.md](SETUP_WINDOWS.md) covers programming/debugging.
-Build uses 11,732 bytes flash and 2,400 bytes linked RAM, including the template's
+Build uses 11,728 bytes flash and 2,400 bytes linked RAM, including the template's
 512-byte heap and 1,024-byte minimum-stack reservations. Runtime stack headroom
 still needs measurement. The active application uses no heap or framebuffer.
 
 With ARM GCC on PATH: install `py -m pip install -r Tests/requirements.txt`,
-then run `py Tests/run_tests.py`. All 18 ARM-emulated tests pass. They compile
+then run `py Tests/run_tests.py`. All 30 ARM-emulated tests pass. They compile
 the real renderer, touch filtering/mapping, packet protocol, SPI transport and
 host helper; mocked LCD IO writes a test-only framebuffer. Tests cover bounds,
 chunk budgets, RGB565 copying, line directions, rotation, corruption, busy/ACK
 handling, touch filtering, calibration validation/clamping, rollover and SPI recovery.
 
-Tests do not execute tft_io.c or the real HAL. They cannot establish GPIO/ADC
-sequencing, electrical drive current, first/last SPI-byte timing, FIFO behavior,
-LCD initialization, actual colours, optical orientation or touch accuracy.
+A second test image executes the real tft_io.c and revised board definitions
+with GPIO/ADC/timer mocks. It checks direct ADC8/9 sensing, excitation/high-Z
+roles, WR/RD isolation, coordinate/pressure arithmetic, discard/median filtering,
+all 16 conversion positions for each setup/start/poll/stop failure, restoration,
+timer wrap and pixel writes after touch/failure. Both suites run through the
+same Tests/run_tests.py command. Test-only .data initialization matches startup.
+
+These models do not emulate real HAL/FIFO timing, electrical drive current,
+ADC settling, LCD electrical initialization/colours or physical touch accuracy.
 No physical-board validation has occurred. Before touch excitation at 5 V,
 measure panel sheet resistance and verify GPIO source/sink currents against the
 PY32 ratings; 20 mA per pin is an absolute maximum, not a design target.

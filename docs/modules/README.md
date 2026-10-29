@@ -1,6 +1,6 @@
 # Module development index
 
-Last reviewed: 2026-10-28. Start here when joining or resuming the project.
+Last reviewed: 2026-10-29. Start here when joining or resuming the project.
 
 These pages describe the agreed purpose, schematic wiring, implemented behavior,
 open decisions, and next steps for every board. Hardware is in manufacturing:
@@ -19,7 +19,7 @@ protocols, schematics, or validation results change.
 | Touch sensor | UART firmware builds; nine software tests pass; hardware validation pending | [Touch Sensor](Touch_Sensor.md) |
 | Stepper motor | NFP-15BY-A motion and OPA/ADC current supervision build;38 software tests pass; hardware pending | [Stepper Motor](Stepper_Motor.md) |
 | LED matrix | SPI/DMA firmware builds; 13 software tests pass; hardware validation pending | [LED Matrix](LED_Matrix.md) |
-| TFT display | ILI9341 display/touch firmware builds; 18 software tests pass; panel calibration and hardware validation pending | [TFT](TFT.md) |
+| TFT display | Revised CS/RS/WR pin map implemented;30 software tests pass; new schematic PDF and hardware validation pending | [TFT](TFT.md) |
 | I2S/audio board | Purpose agreed; ESP audio drivers/features pending; no onboard MCU | [I2S Audio](I2S_Audio.md) |
 
 ## Shared decisions
