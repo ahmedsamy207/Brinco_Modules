@@ -22,7 +22,8 @@ credits ladyada/Adafruit under MIT; its notice is retained in
 the conventional excitation/sense pattern with separate filtering/calibration.
 Owner-confirmed carrier revision 2026-10-29 maps XM/RS to PB1/ADC9 and YP/CS to
 PB0/ADC8, while WR moves to PB8. This replaces the prior complementary
-ADC0/1 sensing method. The repository carrier PDF still awaits replacement.
+ADC0/1 sensing method. The replacement carrier PDF was reviewed on 2026-10-29
+and matches these pins; its SHA-256 is recorded in the module guide.
 Generic examples differ; a common alternate XP=6,YM=7,XM=A2,YP=A1 uses D6/D7/
 RS/WR. That alternate profile is not implemented. The supplier listing still
 does not independently prove the stock's electrode map.

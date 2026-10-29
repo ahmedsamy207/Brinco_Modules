@@ -1,7 +1,7 @@
 /** @file tft_board.h
- *  @brief Owner-confirmed carrier revision2026-10-29; PDF replacement pending.
- *  LCD CS=PB0/ADC8, RS=PB1/ADC9, WR=PB8. The repository's old schematic
- *  PDF must not override this revision until the owner replaces that file.
+ *  @brief Pin map verified against Schematic_TFT_Module.pdf on 2026-10-29.
+ *  LCD CS=PB0/ADC8, RS=PB1/ADC9, WR=PB8. The revised PDF now matches
+ *  the owner's confirmed carrier revision and this firmware.
  *  LCDWIKI MAR2406 touch profile: XP=D0=PA0, YM=D1=PA1, XM=RS, YP=CS.
  *  Supplier stock's electrode wiring still needs confirmation; alternate
  *  WR/RS shields need a different profile. SD remains excluded.

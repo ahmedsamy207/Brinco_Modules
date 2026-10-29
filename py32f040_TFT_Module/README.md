@@ -12,9 +12,8 @@ Its indexed listing names MAR2406/ILI9341 but does not establish the supplied
 board's touch wiring. The current firmware uses the LCDWIKI-specific CS/RS
 profile below. The owner confirmed the revised carrier connections on 2026-10-29:
 **LCD_CS=PB0/ADC8, LCD_RS=PB1/ADC9, LCD_WR=PB8**. This firmware targets that
-revision. The repository schematic PDF still shows the earlier wiring and is
-awaiting the owner's replacement; do not manufacture from the old PDF assuming
-it matches this firmware. The actual purchased shield's electrode wiring still
+revision. The updated repository schematic was reviewed on 2026-10-29 and
+matches this firmware. The actual purchased shield's electrode wiring still
 needs confirmation. An alternate WR/RS shield needs a separate touch profile;
 the revised WR=PB8 has no ADC input.
 
@@ -27,9 +26,14 @@ probed. Verify the actual delivered panel is the documented ILI9341 model.
 
 ## Owner-confirmed revised carrier wiring
 
-[Earlier schematic, replacement pending](../Modules%20Schematics/Schematic_TFT_Module.pdf),
+[Reviewed schematic](../Modules%20Schematics/Schematic_TFT_Module.pdf),
 [module reference](../docs/modules/TFT.md),
 [commented pin definitions](User/Inc/tft_board.h).
+
+Reviewed PDF: single sheet, title block Rev 1.0 dated 2026-09-11. The title block
+was retained despite the updated pin wiring; the reviewed content is identified
+by SHA-256 `2db5ae0d430ccad091c6999314754216e17ea4c8c067e8fe2a55edad9e3f50a3`. Data, RD/reset, SPI header, SD, SWD, power/reset and 24 MHz
+crystal connections were checked against the existing board definitions.
 
 | Signal | MCU GPIO / package pin |
 |---|---|

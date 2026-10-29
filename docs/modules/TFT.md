@@ -35,11 +35,15 @@ below is the LCDWIKI reference profile, not a verified pinout of seller stock.
 Host header: 1 MISO, 2 MOSI, 3 SCK, 4 5 V, 5 CS, 6 GND. This is the dedicated
 ESP32 TFT path, bypassing the UART hub. Simultaneous TFT/LED-matrix selection
 on the single CS path remains unspecified. The owner confirmed the new control
-pin map on 2026-10-29. The [earlier carrier schematic](../../Modules%20Schematics/Schematic_TFT_Module.pdf)
-still shows RS=PB0, WR=PB1, CS=PB8 and awaits replacement. This firmware targets
-**new CS=PB0, RS=PB1, WR=PB8**; the earlier PDF is not the source of that revision.
-The other connections above remain as previously reviewed until the new PDF is
-checked. Do not treat the schematic replacement as already reviewed/committed.
+pin map on 2026-10-29. The [updated carrier schematic](../../Modules%20Schematics/Schematic_TFT_Module.pdf)
+was reviewed locally on the same date and confirms **CS=PB0/ADC8, RS=PB1/ADC9,
+WR=PB8**. Data D0..7, RD/reset, host SPI/header, SD, SWD, power/reset and 24 MHz
+crystal connections also match the firmware definitions.
+
+Reviewed file SHA-256: `2db5ae0d430ccad091c6999314754216e17ea4c8c067e8fe2a55edad9e3f50a3`.
+The single-sheet PDF still carries title-block Rev 1.0 /2026-09-11; use this
+content hash and the reviewed pin map to distinguish it from the earlier file.
+Schematic review confirms drawn connections, not PCB routing or physical tests.
 
 The manufacturer's MAR2406 examples use Arduino XP=8, YM=9, XM=A2, YP=A3.
 With this revision, firmware reads conventional X at YP/CS (ADC8), Y at XM/RS
